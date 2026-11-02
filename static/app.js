@@ -12,7 +12,10 @@ async function loadTasks() {
 
     tasks.forEach(task => {
         const div = document.createElement("div");
-        div.className = "task";
+        const priorityClass = `priority-${task.priority}`;
+        const doneClass = task.status === "done" ? "done" : "";
+
+        div.className = `task ${priorityClass} ${doneClass}`;
 
         div.innerHTML = `
             <div class="task-title">
@@ -21,7 +24,7 @@ async function loadTasks() {
 
             <div class="task-meta">
                 Project: ${task.project}<br>
-                Priority: ${task.priority}<br>
+                Priority: <span class="priority-label">${task.priority}</span><br>
                 Status: ${task.status}<br>
                 Created: ${task.created_at}
             </div>
