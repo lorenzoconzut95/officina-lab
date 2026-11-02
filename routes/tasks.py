@@ -1,7 +1,13 @@
 from fastapi import APIRouter, HTTPException
 
-from database import get_connection
 from models import TaskCreate, TaskUpdate
+from services.tasks import (
+    list_tasks,
+    get_task,
+    create_task,
+    update_task,
+    delete_task
+)
 
 
 router = APIRouter(
@@ -11,140 +17,53 @@ router = APIRouter(
 
 
 @router.get("")
-def get_tasks():
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT id, title, status
-        FROM tasks
-    """)
-
-    rows = cursor.fetchall()
-    connection.close()
-
-    return [
-        {
-            "id": row[0],
-            "title": row[1],
-            "status": row[2]
-        }
-        for row in rows
-    ]
+def read_tasks():
+    return list_tasks()
 
 
 @router.get("/{task_id}")
-def get_task(task_id: int):
-    connection = get_connection()
-    cursor = connection.cursor()
+def read_task(task_id: int):
+    task = get_task(task_id)
 
-    cursor.execute("""
-        SELECT id, title, status
-        FROM tasks
-        WHERE id = ?
-    """, (task_id,))
-
-    row = cursor.fetchone()
-    connection.close()
-
-    if row is None:
+    if task is None:
         raise HTTPException(
             status_code=404,
             detail="Task not found"
         )
 
-    return {
-        "id": row[0],
-        "title": row[1],
-        "status": row[2]
-    }
+    return task
 
 
 @router.post("", status_code=201)
-def create_task(task: TaskCreate):
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        INSERT INTO tasks (title, status)
-        VALUES (?, ?)
-    """, (
-        task.title,
-        "todo"
-    ))
-
-    connection.commit()
-    task_id = cursor.lastrowid
-    connection.close()
-
-    return {
-        "id": task_id,
-        "title": task.title,
-        "status": "todo"
-    }
+def create_new_task(task: TaskCreate):
+    return create_task(task.title)
 
 
 @router.patch("/{task_id}")
-def update_task(task_id: int, task: TaskUpdate):
-    connection = get_connection()
-    cursor = connection.cursor()
+def update_existing_task(
+    task_id: int,
+    task: TaskUpdate
+):
+    updated_task = update_task(
+        task_id,
+        task.title,
+        task.status
+    )
 
-    cursor.execute("""
-        SELECT id, title, status
-        FROM tasks
-        WHERE id = ?
-    """, (task_id,))
-
-    row = cursor.fetchone()
-
-    if row is None:
-        connection.close()
-
+    if updated_task is None:
         raise HTTPException(
             status_code=404,
             detail="Task not found"
         )
 
-    new_title = task.title if task.title is not None else row[1]
-    new_status = task.status if task.status is not None else row[2]
-
-    cursor.execute("""
-        UPDATE tasks
-        SET title = ?, status = ?
-        WHERE id = ?
-    """, (
-        new_title,
-        new_status,
-        task_id
-    ))
-
-    connection.commit()
-    connection.close()
-
-    return {
-        "id": task_id,
-        "title": new_title,
-        "status": new_status
-    }
+    return updated_task
 
 
 @router.delete("/{task_id}")
-def delete_task(task_id: int):
-    connection = get_connection()
-    cursor = connection.cursor()
+def delete_existing_task(task_id: int):
+    deleted = delete_task(task_id)
 
-    cursor.execute("""
-        DELETE FROM tasks
-        WHERE id = ?
-    """, (task_id,))
-
-    connection.commit()
-
-    deleted_rows = cursor.rowcount
-
-    connection.close()
-
-    if deleted_rows == 0:
+    if not deleted:
         raise HTTPException(
             status_code=404,
             detail="Task not found"
