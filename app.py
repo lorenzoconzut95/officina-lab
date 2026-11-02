@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from database import init_db
 from routes.tasks import router as tasks_router
@@ -6,17 +8,24 @@ from routes.tasks import router as tasks_router
 
 app = FastAPI(
     title="Officina Lab API",
-    version="0.5"
+    version="0.6"
+)
+
+
+app.mount(
+    "/static",
+    StaticFiles(directory="static"),
+    name="static"
 )
 
 
 @app.get("/")
+
 def home():
-    return {
-        "project": "Officina Lab",
-        "version": "0.5",
-        "status": "running"
-    }
+    return FileResponse(
+    "static/index.html",
+    media_type="text/html"
+)
 
 
 @app.get("/health")

@@ -36,7 +36,11 @@ def read_task(task_id: int):
 
 @router.post("", status_code=201)
 def create_new_task(task: TaskCreate):
-    return create_task(task.title)
+    return create_task(
+        task.title,
+        task.priority,
+        task.project
+    )
 
 
 @router.patch("/{task_id}")
@@ -47,7 +51,9 @@ def update_existing_task(
     updated_task = update_task(
         task_id,
         task.title,
-        task.status
+        task.status,
+        task.priority,
+        task.project
     )
 
     if updated_task is None:

@@ -1,24 +1,32 @@
 from database import get_connection
 
 
+def row_to_dict(row):
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "status": row["status"],
+        "priority": row["priority"],
+        "project": row["project"],
+        "created_at": row["created_at"]
+    }
+
+
 def list_tasks():
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT id, title, status
+        SELECT *
         FROM tasks
+        ORDER BY created_at DESC
     """)
 
     rows = cursor.fetchall()
     connection.close()
 
     return [
-        {
-            "id": row[0],
-            "title": row[1],
-            "status": row[2]
-        }
+        row_to_dict(row)
         for row in rows
     ]
 
@@ -28,7 +36,7 @@ def get_task(task_id):
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT id, title, status
+        SELECT *
         FROM tasks
         WHERE id = ?
     """, (task_id,))
@@ -39,58 +47,67 @@ def get_task(task_id):
     if row is None:
         return None
 
-    return {
-        "id": row[0],
-        "title": row[1],
-        "status": row[2]
-    }
+    return row_to_dict(row)
 
 
-def create_task(title):
+def create_task(title, priority, project):
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
-        INSERT INTO tasks (title, status)
-        VALUES (?, ?)
+        INSERT INTO tasks (
+            title,
+            status,
+            priority,
+            project
+        )
+        VALUES (?, ?, ?, ?)
     """, (
         title,
-        "todo"
+        "todo",
+        priority,
+        project
     ))
 
     connection.commit()
+
     task_id = cursor.lastrowid
+
     connection.close()
 
-    return {
-        "id": task_id,
-        "title": title,
-        "status": "todo"
-    }
+    return get_task(task_id)
 
 
-def update_task(task_id, title, status):
+def update_task(
+    task_id,
+    title,
+    status,
+    priority,
+    project
+):
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute("""
         UPDATE tasks
-        SET title = ?, status = ?
+        SET
+            title = ?,
+            status = ?,
+            priority = ?,
+            project = ?
         WHERE id = ?
     """, (
         title,
         status,
+        priority,
+        project,
         task_id
     ))
 
     connection.commit()
     connection.close()
 
-    return {
-        "id": task_id,
-        "title": title,
-        "status": status
-    }
+    return get_task(task_id)
 
 
 def delete_task(task_id):
@@ -103,7 +120,9 @@ def delete_task(task_id):
     """, (task_id,))
 
     connection.commit()
+
     deleted_rows = cursor.rowcount
+
     connection.close()
 
     return deleted_rows > 0

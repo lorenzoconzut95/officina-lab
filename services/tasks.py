@@ -15,23 +15,32 @@ def get_task(task_id):
     return repo_get_task(task_id)
 
 
-def create_task(title):
-    return repo_create_task(title)
+def create_task(title, priority, project):
+    return repo_create_task(
+        title,
+        priority,
+        project
+    )
 
 
-def update_task(task_id, title=None, status=None):
+def update_task(
+    task_id,
+    title=None,
+    status=None,
+    priority=None,
+    project=None
+):
     existing_task = repo_get_task(task_id)
 
     if existing_task is None:
         return None
 
-    new_title = title if title is not None else existing_task["title"]
-    new_status = status if status is not None else existing_task["status"]
-
     return repo_update_task(
         task_id,
-        new_title,
-        new_status
+        title if title is not None else existing_task["title"],
+        status if status is not None else existing_task["status"],
+        priority if priority is not None else existing_task["priority"],
+        project if project is not None else existing_task["project"]
     )
 
 

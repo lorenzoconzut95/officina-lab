@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officina Lab</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <main class="container">
+        <h1>Officina Lab</h1>
+        <p class="subtitle">Task Dashboard</p>
+
+        <section class="new-task">
+            <h2>New Task</h2>
+
+            <input id="task-title" type="text" placeholder="Task title">
+
+            <select id="task-priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+
+            <input id="task-project" type="text" value="Officina Lab">
+
+            <button id="create-task-button">
+                Create Task
+            </button>
+        </section>
+
+        <section>
+            <h2>Tasks</h2>
+            <div id="tasks"></div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
