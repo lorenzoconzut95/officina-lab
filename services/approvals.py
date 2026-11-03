@@ -5,7 +5,10 @@ from repositories.approvals import (
     resolve_approval as repo_resolve_approval
 )
 
-from services.tasks import create_task
+from services.tasks import (
+    create_task,
+    update_task
+)
 
 
 def list_approvals(status=None):
@@ -52,6 +55,14 @@ def approve(approval_id):
                 "project",
                 "Officina Lab"
             )
+        )
+
+    if approval["action"] == "update_task_status":
+        payload = approval["payload"]
+
+        update_task(
+            payload["task_id"],
+            status=payload["status"]
         )
 
     return repo_resolve_approval(
