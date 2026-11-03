@@ -36,9 +36,9 @@ class ApiKeyConfigurationTests(unittest.TestCase):
         ):
             status = get_api_key_status()
 
-        self.assertTrue(status["configured"])
-        self.assertEqual(status["reason"], "ok")
-        self.assertTrue(is_configured())
+            self.assertTrue(status["configured"])
+            self.assertEqual(status["reason"], "ok")
+            self.assertTrue(is_configured())
 
 
 if __name__ == "__main__":
