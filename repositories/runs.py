@@ -14,7 +14,10 @@ def row_to_dict(row):
         "tokens_in": row["tokens_in"],
         "tokens_out": row["tokens_out"],
         "cost_usd": row["cost_usd"],
-        "duration_seconds": row["duration_seconds"]
+        "duration_seconds": row["duration_seconds"],
+        "model": row["model"],
+        "context_sources": row["context_sources"],
+        "context_snapshot": row["context_snapshot"]
     }
 
 
@@ -32,7 +35,10 @@ def run_select():
             runs.tokens_in,
             runs.tokens_out,
             runs.cost_usd,
-            runs.duration_seconds
+            runs.duration_seconds,
+            runs.model,
+            runs.context_sources,
+            runs.context_snapshot
         FROM runs
         JOIN agents ON agents.id = runs.agent_id
     """
@@ -135,6 +141,35 @@ def finish_run(
         tokens_in,
         tokens_out,
         cost_usd,
+        run_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+    return get_run(run_id)
+
+
+def set_run_context(
+    run_id,
+    model,
+    context_sources,
+    context_snapshot
+):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE runs
+        SET
+            model = ?,
+            context_sources = ?,
+            context_snapshot = ?
+        WHERE id = ?
+    """, (
+        model,
+        context_sources,
+        context_snapshot,
         run_id
     ))
 
