@@ -77,6 +77,8 @@ def execute_run(run_id):
         run["task"]
     )
 
+    context_package["run_id"] = run_id
+
     set_run_context(
         run_id,
         DEFAULT_MODEL if is_configured() else "local-executor",
