@@ -4,7 +4,8 @@ from models import RunCreate, RunFinish
 from services.runs import (
     list_runs,
     create_run,
-    finish_run
+    finish_run,
+    create_builder_handoff
 )
 
 from services.executor import execute_run
@@ -60,6 +61,26 @@ def execute_existing_run(run_id: int):
         raise HTTPException(
             status_code=404,
             detail="Run or agent not found"
+        )
+
+    return run
+
+
+
+@router.post("/{run_id}/handoff-builder", status_code=201)
+def handoff_to_builder(run_id: int):
+    run = create_builder_handoff(run_id)
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Source run not found"
+        )
+
+    if run.get("error") == "builder_not_found":
+        raise HTTPException(
+            status_code=404,
+            detail="Builder agent not found"
         )
 
     return run
