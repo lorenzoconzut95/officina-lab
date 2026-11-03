@@ -54,11 +54,19 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             role TEXT NOT NULL,
+            goal TEXT NOT NULL DEFAULT '',
             status TEXT NOT NULL DEFAULT 'idle',
             project TEXT NOT NULL DEFAULT 'Officina Lab',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    ensure_column(
+        cursor,
+        "agents",
+        "goal",
+        "TEXT NOT NULL DEFAULT ''"
+    )
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS memories (
@@ -123,54 +131,13 @@ def init_db():
         )
     """)
 
-    ensure_column(
-        cursor,
-        "runs",
-        "tokens_in",
-        "INTEGER NOT NULL DEFAULT 0"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "tokens_out",
-        "INTEGER NOT NULL DEFAULT 0"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "cost_usd",
-        "REAL NOT NULL DEFAULT 0"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "duration_seconds",
-        "INTEGER"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "model",
-        "TEXT"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "context_sources",
-        "TEXT"
-    )
-
-    ensure_column(
-        cursor,
-        "runs",
-        "context_snapshot",
-        "TEXT"
-    )
+    ensure_column(cursor, "runs", "tokens_in", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(cursor, "runs", "tokens_out", "INTEGER NOT NULL DEFAULT 0")
+    ensure_column(cursor, "runs", "cost_usd", "REAL NOT NULL DEFAULT 0")
+    ensure_column(cursor, "runs", "duration_seconds", "INTEGER")
+    ensure_column(cursor, "runs", "model", "TEXT")
+    ensure_column(cursor, "runs", "context_sources", "TEXT")
+    ensure_column(cursor, "runs", "context_snapshot", "TEXT")
 
     connection.commit()
     connection.close()
