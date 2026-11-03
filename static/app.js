@@ -148,6 +148,7 @@ function renderRuns(runs) {
     if (r.status === "running") {
       html +=
         '<div class="run-actions">' +
+        '<button onclick="executeRun(' + r.id + ')">Execute</button>' +
         '<button onclick="finishRun(' + r.id + ',\'completed\')">Complete</button>' +
         '<button onclick="finishRun(' + r.id + ',\'failed\')">Fail</button>' +
         '</div>';
@@ -351,6 +352,16 @@ async function startRun() {
 
   document.getElementById("run-task").value = "";
   await Promise.all([loadRuns(),loadAgents()]);
+}
+
+async function executeRun(id) {
+  const r = await fetch("/api/runs/" + id + "/execute", {
+    method:"POST"
+  });
+
+  if (!r.ok) return alert("Errore nell'esecuzione locale dell'agente");
+
+  await Promise.all([loadRuns(), loadAgents()]);
 }
 
 async function finishRun(id,status) {
