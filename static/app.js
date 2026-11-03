@@ -1,3 +1,5 @@
+let allTasks = [];
+
 function updateStats(tasks) {
     const total = tasks.length;
     const done = tasks.filter(task => task.status === "done").length;
@@ -8,18 +10,26 @@ function updateStats(tasks) {
     document.getElementById("total-count").textContent = total;
 }
 
+function getFilteredTasks() {
+    const status = document.getElementById("filter-status").value;
+    const priority = document.getElementById("filter-priority").value;
+    const project = document.getElementById("filter-project").value.trim().toLowerCase();
 
-async function loadTasks() {
-    const response = await fetch("/api/tasks");
-    const tasks = await response.json();
+    return allTasks.filter(task => {
+        const statusMatches = status === "all" || task.status === status;
+        const priorityMatches = priority === "all" || task.priority === priority;
+        const projectMatches = !project || task.project.toLowerCase().includes(project);
 
-    updateStats(tasks);
+        return statusMatches && priorityMatches && projectMatches;
+    });
+}
 
+function renderTasks(tasks) {
     const container = document.getElementById("tasks");
     container.innerHTML = "";
 
     if (tasks.length === 0) {
-        container.innerHTML = "<p>Nessun task presente.</p>";
+        container.innerHTML = "<p>Nessun task corrisponde ai filtri.</p>";
         return;
     }
 
@@ -31,25 +41,16 @@ async function loadTasks() {
         div.className = `task ${priorityClass} ${doneClass}`;
 
         div.innerHTML = `
-            <div class="task-title">
-                ${task.title}
-            </div>
-
+            <div class="task-title">${task.title}</div>
             <div class="task-meta">
                 Project: ${task.project}<br>
                 Priority: <span class="priority-label">${task.priority}</span><br>
                 Status: ${task.status}<br>
                 Created: ${task.created_at}
             </div>
-
             <div class="task-actions">
-                <button onclick="completeTask(${task.id})">
-                    Done
-                </button>
-
-                <button onclick="deleteTask(${task.id})">
-                    Delete
-                </button>
+                <button onclick="completeTask(${task.id})">Done</button>
+                <button onclick="deleteTask(${task.id})">Delete</button>
             </div>
         `;
 
@@ -57,6 +58,17 @@ async function loadTasks() {
     });
 }
 
+function applyFilters() {
+    renderTasks(getFilteredTasks());
+}
+
+async function loadTasks() {
+    const response = await fetch("/api/tasks");
+    allTasks = await response.json();
+
+    updateStats(allTasks);
+    applyFilters();
+}
 
 async function createTask() {
     const title = document.getElementById("task-title").value;
@@ -70,14 +82,8 @@ async function createTask() {
 
     const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            title: title,
-            priority: priority,
-            project: project
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, priority, project })
     });
 
     if (!response.ok) {
@@ -89,16 +95,11 @@ async function createTask() {
     await loadTasks();
 }
 
-
 async function completeTask(taskId) {
     const response = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            status: "done"
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" })
     });
 
     if (!response.ok) {
@@ -108,7 +109,6 @@ async function completeTask(taskId) {
 
     await loadTasks();
 }
-
 
 async function deleteTask(taskId) {
     const response = await fetch(`/api/tasks/${taskId}`, {
@@ -123,10 +123,9 @@ async function deleteTask(taskId) {
     await loadTasks();
 }
 
-
-document
-    .getElementById("create-task-button")
-    .addEventListener("click", createTask);
-
+document.getElementById("create-task-button").addEventListener("click", createTask);
+document.getElementById("filter-status").addEventListener("change", applyFilters);
+document.getElementById("filter-priority").addEventListener("change", applyFilters);
+document.getElementById("filter-project").addEventListener("input", applyFilters);
 
 loadTasks();
