@@ -75,6 +75,11 @@ def create_builder_handoff(run_id):
     if source_run is None:
         return None
 
+    if source_run["agent_name"].lower() != "explorer":
+        return {
+            "error": "handoff_requires_explorer"
+        }
+
     builders = [
         agent for agent in list_agents()
         if agent["name"].lower() == "builder"
