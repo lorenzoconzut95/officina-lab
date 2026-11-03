@@ -4,6 +4,7 @@ let allRuns = [];
 let allMemories = [];
 let allApprovals = [];
 let allToolCalls = [];
+let allErrors = [];
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -176,6 +177,33 @@ function renderApprovals(approvals) {
       '<div class="approval-payload">' + payload + '</div>' +
       '<span class="approval-status ' + a.status + '">' + a.status + '</span>' +
       actions;
+
+    c.appendChild(card);
+  });
+}
+
+function renderErrors(items) {
+  const c = document.getElementById("error-log");
+  document.getElementById("error-count").textContent =
+    items.length + " errors";
+
+  c.innerHTML = "";
+
+  if (!items.length) {
+    c.innerHTML = "<p>Nessun errore registrato.</p>";
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "error-card";
+
+    card.innerHTML =
+      '<div class="error-title">Run #' + item.run_id + ' failed</div>' +
+      '<div class="error-meta">Agent: ' + item.agent_name +
+      '<br>Task: ' + item.task +
+      '<br>' + item.created_at + '</div>' +
+      '<div class="error-message">' + item.error_message + '</div>';
 
     c.appendChild(card);
   });
@@ -382,6 +410,12 @@ async function loadApprovals() {
   renderApprovals(allApprovals);
 }
 
+async function loadErrors() {
+  const r = await fetch("/api/errors?limit=30");
+  allErrors = await r.json();
+  renderErrors(allErrors);
+}
+
 async function loadToolCalls() {
   const r = await fetch("/api/tool-calls?limit=30");
   allToolCalls = await r.json();
@@ -400,6 +434,7 @@ async function refreshDashboard() {
     loadRuns(),
     loadMemories(),
     loadApprovals(),
+    loadErrors(),
     loadToolCalls(),
     loadActivity()
   ]);
@@ -547,7 +582,11 @@ async function startRun() {
 async function executeRun(id) {
   const r = await fetch("/api/runs/" + id + "/execute", {method:"POST"});
   if (!r.ok) return alert("Errore nell'esecuzione dell'agente");
-  await Promise.all([loadRuns(),loadAgents()]);
+  await Promise.all([
+    loadRuns(),
+    loadAgents(),
+    loadErrors()
+  ]);
 }
 
 async function finishRun(id,status) {
