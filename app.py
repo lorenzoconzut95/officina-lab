@@ -9,11 +9,12 @@ from routes.agents import router as agents_router
 from routes.runs import router as runs_router
 from routes.memories import router as memories_router
 from routes.approvals import router as approvals_router
+from routes.tool_calls import router as tool_calls_router
 
 
 app = FastAPI(
     title="Officina Lab API",
-    version="1.1"
+    version="1.2"
 )
 
 
@@ -45,6 +46,7 @@ app.include_router(agents_router)
 app.include_router(runs_router)
 app.include_router(memories_router)
 app.include_router(approvals_router)
+app.include_router(tool_calls_router)
 
 
 init_db()
