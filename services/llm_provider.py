@@ -29,10 +29,40 @@ OUTPUT_COST_PER_M = float(
 )
 
 
+def get_api_key_status():
+    key = os.getenv("OPENAI_API_KEY")
+
+    if not key:
+        return {
+            "configured": False,
+            "reason": "missing"
+        }
+
+    normalized = key.strip().lower()
+
+    placeholder_markers = [
+        "la_tua_chiave",
+        "your_key",
+        "incolla_qui",
+        "paste_here",
+        "sk-your",
+        "sk-xxx"
+    ]
+
+    if any(marker in normalized for marker in placeholder_markers):
+        return {
+            "configured": False,
+            "reason": "placeholder"
+        }
+
+    return {
+        "configured": True,
+        "reason": "ok"
+    }
+
+
 def is_configured():
-    return bool(
-        os.getenv("OPENAI_API_KEY")
-    )
+    return get_api_key_status()["configured"]
 
 
 def usage_numbers(response):
