@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=7">
+    <link rel="stylesheet" href="/static/style.css?v=8">
 </head>
 <body>
     <main class="container">
         <h1>Officina Lab</h1>
-        <p class="subtitle">Task Dashboard</p>
+        <p class="subtitle">Control Tower</p>
 
         <section class="next-action">
             <span class="next-action-label">Next Best Action</span>
@@ -31,22 +31,35 @@
             <div id="projects"></div>
         </section>
 
+        <section class="agents-section">
+            <div class="section-header">
+                <h2>Agents</h2>
+                <span id="agent-count" class="muted">0 agents</span>
+            </div>
+
+            <div class="agent-form">
+                <input id="agent-name" type="text" placeholder="Agent name">
+                <input id="agent-role" type="text" placeholder="Role">
+                <input id="agent-project" type="text" value="Officina Lab">
+                <button id="create-agent-button">Create Agent</button>
+            </div>
+
+            <div id="agents"></div>
+        </section>
+
         <section class="filters">
             <select id="filter-status">
                 <option value="all">All statuses</option>
                 <option value="todo">Todo</option>
                 <option value="done">Done</option>
             </select>
-
             <select id="filter-priority">
                 <option value="all">All priorities</option>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low</option>
             </select>
-
             <input id="filter-project" type="text" placeholder="Filter by project">
-
             <select id="sort-tasks">
                 <option value="priority">Sort: priority</option>
                 <option value="newest">Sort: newest</option>
@@ -78,6 +91,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=7"></script>
+    <script src="/static/app.js?v=8"></script>
 </body>
 </html>
