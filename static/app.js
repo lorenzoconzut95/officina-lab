@@ -143,6 +143,37 @@ function renderTasks(tasks) {
     });
 }
 
+function renderActivity(items) {
+    const container = document.getElementById("activity-log");
+    container.innerHTML = "";
+
+    if (items.length === 0) {
+        container.innerHTML = "<p>Nessuna attività registrata.</p>";
+        return;
+    }
+
+    items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "activity-item";
+
+        div.innerHTML = `
+            <span class="activity-action ${item.action}">
+                ${item.action}
+            </span>
+
+            <span class="activity-main">
+                ${item.task_title} · ${item.project}
+            </span>
+
+            <span class="activity-time">
+                ${item.created_at}
+            </span>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
 function applyFilters() {
     const filtered = getFilteredTasks();
     const sorted = sortTasks(filtered);
@@ -156,6 +187,19 @@ async function loadTasks() {
     updateStats(allTasks);
     updateNextBestAction(allTasks);
     applyFilters();
+}
+
+async function loadActivity() {
+    const response = await fetch("/api/activity?limit=15");
+    const activity = await response.json();
+    renderActivity(activity);
+}
+
+async function refreshDashboard() {
+    await Promise.all([
+        loadTasks(),
+        loadActivity()
+    ]);
 }
 
 async function createTask() {
@@ -189,7 +233,7 @@ async function createTask() {
     }
 
     document.getElementById("task-title").value = "";
-    await loadTasks();
+    await refreshDashboard();
 }
 
 async function completeTask(taskId) {
@@ -209,7 +253,7 @@ async function completeTask(taskId) {
         return;
     }
 
-    await loadTasks();
+    await refreshDashboard();
 }
 
 async function deleteTask(taskId) {
@@ -223,7 +267,7 @@ async function deleteTask(taskId) {
         return;
     }
 
-    await loadTasks();
+    await refreshDashboard();
 }
 
 document
@@ -246,4 +290,4 @@ document
     .getElementById("sort-tasks")
     .addEventListener("change", applyFilters);
 
-loadTasks();
+refreshDashboard();
