@@ -10,10 +10,11 @@ def list_agents():
     return repo_list_agents()
 
 
-def create_agent(name, role, project):
+def create_agent(name, role, goal, project):
     return repo_create_agent(
         name,
         role,
+        goal,
         project
     )
 
