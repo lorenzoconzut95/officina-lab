@@ -71,6 +71,19 @@ def init_db():
     """)
 
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS approvals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            agent_name TEXT NOT NULL,
+            run_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TEXT
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,
