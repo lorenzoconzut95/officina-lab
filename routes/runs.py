@@ -7,6 +7,8 @@ from services.runs import (
     finish_run
 )
 
+from services.executor import execute_run
+
 
 router = APIRouter(
     prefix="/api/runs",
@@ -45,6 +47,19 @@ def finish_existing_run(
         raise HTTPException(
             status_code=404,
             detail="Run not found"
+        )
+
+    return run
+
+
+@router.post("/{run_id}/execute")
+def execute_existing_run(run_id: int):
+    run = execute_run(run_id)
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Run or agent not found"
         )
 
     return run
