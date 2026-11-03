@@ -503,6 +503,7 @@ async function approveRequest(id) {
   await Promise.all([
     loadApprovals(),
     loadTasks(),
+    loadMemories(),
     loadToolCalls(),
     loadActivity()
   ]);
