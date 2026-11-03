@@ -3,6 +3,7 @@ import json
 from repositories.tasks import list_tasks
 from repositories.memories import list_memories
 from services.approvals import create_approval
+from services.tool_calls import log_tool_call
 
 
 TOOL_DEFINITIONS = [
@@ -19,10 +20,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "project": {
                     "type": "string",
-                    "description": (
-                        "Optional project name. "
-                        "Leave empty to read all projects."
-                    )
+                    "description": "Optional project name."
                 },
                 "status": {
                     "type": "string",
@@ -38,24 +36,19 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "name": "list_memories",
         "description": (
-            "Read saved Officina project memories, decisions, facts, and notes. "
-            "Use this when prior project decisions or remembered facts matter."
+            "Read saved Officina project memories, decisions, facts, and notes."
         ),
         "parameters": {
             "type": "object",
             "properties": {
                 "project": {
                     "type": "string",
-                    "description": (
-                        "Optional project name. "
-                        "Leave empty to read recent memories from all projects."
-                    )
+                    "description": "Optional project name."
                 },
                 "limit": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 20,
-                    "description": "Maximum number of memories to return."
+                    "maximum": 20
                 }
             },
             "required": [],
@@ -67,27 +60,39 @@ TOOL_DEFINITIONS = [
         "name": "create_task",
         "description": (
             "Propose creating a new Officina task. "
-            "This is a protected write action: it NEVER writes immediately. "
-            "It creates an approval request that the user must approve or reject."
+            "This write action requires human approval before execution."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "Task title."
-                },
+                "title": {"type": "string"},
                 "priority": {
                     "type": "string",
-                    "enum": ["low", "medium", "high"],
-                    "description": "Task priority."
+                    "enum": ["low", "medium", "high"]
                 },
-                "project": {
-                    "type": "string",
-                    "description": "Project name."
-                }
+                "project": {"type": "string"}
             },
             "required": ["title", "priority", "project"],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "update_task_status",
+        "description": (
+            "Propose changing an existing task status. "
+            "This write action requires human approval before execution."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "task_id": {"type": "integer"},
+                "status": {
+                    "type": "string",
+                    "enum": ["todo", "done"]
+                }
+            },
+            "required": ["task_id", "status"],
             "additionalProperties": False
         }
     }
@@ -108,26 +113,23 @@ def execute_tool(
 
         if project:
             tasks = [
-                task
-                for task in tasks
-                if task["project"].lower()
-                == project.lower()
+                task for task in tasks
+                if task["project"].lower() == project.lower()
             ]
 
         if status != "all":
             tasks = [
-                task
-                for task in tasks
+                task for task in tasks
                 if task["status"] == status
             ]
 
-        return {
+        result = {
             "tool": "list_tasks",
             "count": len(tasks),
             "items": tasks[:30]
         }
 
-    if name == "list_memories":
+    elif name == "list_memories":
         project = arguments.get("project")
         limit = arguments.get("limit", 8)
 
@@ -136,13 +138,13 @@ def execute_tool(
             limit=limit
         )
 
-        return {
+        result = {
             "tool": "list_memories",
             "count": len(memories),
             "items": memories
         }
 
-    if name == "create_task":
+    elif name == "create_task":
         approval = create_approval(
             "create_task",
             arguments,
@@ -150,20 +152,50 @@ def execute_tool(
             run_id
         )
 
-        return {
+        result = {
             "tool": "create_task",
             "status": "approval_required",
             "approval_id": approval["id"],
             "message": (
                 "Task creation has NOT been executed. "
-                "A human approval is required."
+                "Human approval is required."
             ),
             "proposed_action": arguments
         }
 
-    return {
-        "error": "Unknown tool: " + name
-    }
+    elif name == "update_task_status":
+        approval = create_approval(
+            "update_task_status",
+            arguments,
+            agent_name or "unknown-agent",
+            run_id
+        )
+
+        result = {
+            "tool": "update_task_status",
+            "status": "approval_required",
+            "approval_id": approval["id"],
+            "message": (
+                "Task status has NOT been changed. "
+                "Human approval is required."
+            ),
+            "proposed_action": arguments
+        }
+
+    else:
+        result = {
+            "error": "Unknown tool: " + name
+        }
+
+    log_tool_call(
+        run_id,
+        agent_name or "unknown-agent",
+        name,
+        arguments,
+        result
+    )
+
+    return result
 
 
 def execute_tool_json(
