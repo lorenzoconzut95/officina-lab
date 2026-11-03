@@ -23,3 +23,13 @@ class AgentCreate(BaseModel):
 
 class AgentStatusUpdate(BaseModel):
     status: str
+
+
+class RunCreate(BaseModel):
+    agent_id: int
+    task: str
+
+
+class RunFinish(BaseModel):
+    status: str = "completed"
+    output: str = ""
