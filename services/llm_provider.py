@@ -2,6 +2,8 @@ import os
 
 from openai import OpenAI
 
+from services.context import load_officina_context
+
 
 DEFAULT_MODEL = os.getenv(
     "OFFICINA_OPENAI_MODEL",
@@ -32,14 +34,19 @@ def is_configured():
 def run_llm(agent, task):
     client = OpenAI()
 
+    system_context = load_officina_context()
+
     instructions = (
         "You are an agent inside Officina Lab. "
         "Act according to the assigned role. "
         "Be concise, practical, and structured. "
         "Return a useful result and a clear next action.\n\n"
+        "AGENT IDENTITY\n"
         "Agent name: " + agent["name"] + "\n"
         "Role: " + agent["role"] + "\n"
-        "Project: " + agent["project"]
+        "Project: " + agent["project"] + "\n\n"
+        "OFFICINA SYSTEM CONTEXT\n"
+        + system_context
     )
 
     response = client.responses.create(
