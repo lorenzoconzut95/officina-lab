@@ -152,7 +152,9 @@ def run_llm(agent, task, context_package):
             model=DEFAULT_MODEL,
             instructions=instructions,
             input=input_items,
-            tools=TOOL_DEFINITIONS
+            tools=tools_after_calls(
+                tools_used
+            )
         )
 
         tokens_in, tokens_out = usage_numbers(
