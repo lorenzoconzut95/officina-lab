@@ -83,4 +83,10 @@ def handoff_to_builder(run_id: int):
             detail="Builder agent not found"
         )
 
+    if run.get("error") == "handoff_requires_explorer":
+        raise HTTPException(
+            status_code=400,
+            detail="Only Explorer runs can be handed off to Builder"
+        )
+
     return run
