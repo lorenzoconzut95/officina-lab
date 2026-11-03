@@ -46,6 +46,61 @@ function updateNextBestAction(tasks) {
         `${nextTask.project} · ${nextTask.priority} priority`;
 }
 
+function renderProjects(tasks) {
+    const container = document.getElementById("projects");
+    const projects = {};
+
+    tasks.forEach(task => {
+        if (!projects[task.project]) {
+            projects[task.project] = {
+                total: 0,
+                done: 0
+            };
+        }
+
+        projects[task.project].total += 1;
+
+        if (task.status === "done") {
+            projects[task.project].done += 1;
+        }
+    });
+
+    const names = Object.keys(projects).sort();
+    container.innerHTML = "";
+
+    if (names.length === 0) {
+        container.innerHTML = "<p>Nessun progetto presente.</p>";
+        return;
+    }
+
+    names.forEach(name => {
+        const stats = projects[name];
+        const progress = Math.round(
+            (stats.done / stats.total) * 100
+        );
+
+        const card = document.createElement("div");
+        card.className = "project-card";
+
+        card.innerHTML = `
+            <div class="project-title">${name}</div>
+            <div class="project-meta">
+                ${stats.done}/${stats.total} done · ${progress}%
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+            </div>
+        `;
+
+        card.addEventListener("click", () => {
+            document.getElementById("filter-project").value = name;
+            applyFilters();
+        });
+
+        container.appendChild(card);
+    });
+}
+
 function getFilteredTasks() {
     const status = document.getElementById("filter-status").value;
     const priority = document.getElementById("filter-priority").value;
@@ -118,24 +173,15 @@ function renderTasks(tasks) {
 
         div.innerHTML = `
             <div class="task-title">${task.title}</div>
-
             <div class="task-meta">
                 Project: ${task.project}<br>
-                Priority:
-                <span class="priority-label">
-                    ${task.priority}
-                </span><br>
+                Priority: <span class="priority-label">${task.priority}</span><br>
                 Status: ${task.status}<br>
                 Created: ${task.created_at}
             </div>
-
             <div class="task-actions">
-                <button onclick="completeTask(${task.id})">
-                    Done
-                </button>
-                <button onclick="deleteTask(${task.id})">
-                    Delete
-                </button>
+                <button onclick="completeTask(${task.id})">Done</button>
+                <button onclick="deleteTask(${task.id})">Delete</button>
             </div>
         `;
 
@@ -160,11 +206,9 @@ function renderActivity(items) {
             <span class="activity-action ${item.action}">
                 ${item.action}
             </span>
-
             <span class="activity-main">
                 ${item.task_title} · ${item.project}
             </span>
-
             <span class="activity-time">
                 ${item.created_at}
             </span>
@@ -186,6 +230,7 @@ async function loadTasks() {
 
     updateStats(allTasks);
     updateNextBestAction(allTasks);
+    renderProjects(allTasks);
     applyFilters();
 }
 
@@ -203,12 +248,9 @@ async function refreshDashboard() {
 }
 
 async function createTask() {
-    const title =
-        document.getElementById("task-title").value;
-    const priority =
-        document.getElementById("task-priority").value;
-    const project =
-        document.getElementById("task-project").value;
+    const title = document.getElementById("task-title").value;
+    const priority = document.getElementById("task-priority").value;
+    const project = document.getElementById("task-project").value;
 
     if (!title.trim()) {
         alert("Inserisci un titolo");
@@ -217,14 +259,8 @@ async function createTask() {
 
     const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            title,
-            priority,
-            project
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, priority, project })
     });
 
     if (!response.ok) {
@@ -237,16 +273,11 @@ async function createTask() {
 }
 
 async function completeTask(taskId) {
-    const response =
-        await fetch(`/api/tasks/${taskId}`, {
-            method: "PATCH",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                status: "done"
-            })
-        });
+    const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done" })
+    });
 
     if (!response.ok) {
         alert("Errore nell'aggiornamento del task");
@@ -257,10 +288,9 @@ async function completeTask(taskId) {
 }
 
 async function deleteTask(taskId) {
-    const response =
-        await fetch(`/api/tasks/${taskId}`, {
-            method: "DELETE"
-        });
+    const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE"
+    });
 
     if (!response.ok) {
         alert("Errore nell'eliminazione del task");
@@ -270,24 +300,25 @@ async function deleteTask(taskId) {
     await refreshDashboard();
 }
 
-document
-    .getElementById("create-task-button")
+document.getElementById("create-task-button")
     .addEventListener("click", createTask);
 
-document
-    .getElementById("filter-status")
+document.getElementById("filter-status")
     .addEventListener("change", applyFilters);
 
-document
-    .getElementById("filter-priority")
+document.getElementById("filter-priority")
     .addEventListener("change", applyFilters);
 
-document
-    .getElementById("filter-project")
+document.getElementById("filter-project")
     .addEventListener("input", applyFilters);
 
-document
-    .getElementById("sort-tasks")
+document.getElementById("sort-tasks")
     .addEventListener("change", applyFilters);
+
+document.getElementById("clear-project-filter")
+    .addEventListener("click", () => {
+        document.getElementById("filter-project").value = "";
+        applyFilters();
+    });
 
 refreshDashboard();
