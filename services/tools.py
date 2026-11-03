@@ -3,6 +3,7 @@ import json
 from repositories.tasks import list_tasks
 from repositories.memories import list_memories
 from repositories.runs import list_runs
+from repositories.tool_calls import list_tool_calls
 from services.approvals import create_approval
 from services.tool_calls import log_tool_call
 
@@ -79,6 +80,33 @@ TOOL_DEFINITIONS = [
                 }
             },
             "required": [],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "inspect_project_state",
+        "description": (
+            "Build a read-only evidence snapshot for a project by combining "
+            "its tasks, saved memories, recent agent runs, and recent tool calls. "
+            "Use this before deciding whether work is already implemented, "
+            "what changed recently, or what action should come next."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "project": {
+                    "type": "string",
+                    "description": "Project name to inspect."
+                },
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "description": "Maximum recent runs/tool calls to include."
+                }
+            },
+            "required": ["project"],
             "additionalProperties": False
         }
     },
@@ -202,6 +230,61 @@ def execute_tool(
             "tool": "list_recent_runs",
             "count": len(items),
             "items": items
+        }
+
+    elif name == "inspect_project_state":
+        project = arguments["project"]
+        limit = arguments.get("limit", 8)
+
+        project_tasks = [
+            task for task in list_tasks()
+            if task["project"].lower() == project.lower()
+        ]
+
+        project_memories = list_memories(
+            project=project,
+            limit=limit
+        )
+
+        recent_runs = list_runs()[:limit]
+        recent_tool_calls = list_tool_calls(
+            limit=limit
+        )
+
+        result = {
+            "tool": "inspect_project_state",
+            "project": project,
+            "summary": {
+                "task_count": len(project_tasks),
+                "todo_count": len([
+                    task for task in project_tasks
+                    if task["status"] == "todo"
+                ]),
+                "done_count": len([
+                    task for task in project_tasks
+                    if task["status"] == "done"
+                ]),
+                "memory_count": len(project_memories),
+                "recent_run_count": len(recent_runs),
+                "recent_tool_call_count": len(recent_tool_calls)
+            },
+            "tasks": project_tasks,
+            "memories": project_memories,
+            "recent_runs": [
+                {
+                    "id": run["id"],
+                    "agent_name": run["agent_name"],
+                    "task": run["task"],
+                    "status": run["status"],
+                    "output": run["output"],
+                    "model": run["model"],
+                    "context_sources": run["context_sources"],
+                    "started_at": run["started_at"],
+                    "ended_at": run["ended_at"]
+                }
+                for run in recent_runs
+            ],
+            "recent_tool_calls": recent_tool_calls
         }
 
     elif name == "create_task":
