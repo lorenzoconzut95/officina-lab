@@ -297,6 +297,13 @@ function renderRuns(runs) {
         '</div>';
     }
 
+    if (r.status === "completed" && r.output) {
+      html +=
+        '<div class="run-actions">' +
+        '<button onclick="handoffToBuilder(' + r.id + ')">Handoff to Builder</button>' +
+        '</div>';
+    }
+
     card.innerHTML = html;
     c.appendChild(card);
   });
@@ -618,6 +625,48 @@ async function executeRun(id) {
     loadRuns(),
     loadAgents(),
     loadErrors()
+  ]);
+}
+
+async function handoffToBuilder(runId) {
+  const sourceRun = allRuns.find(r => r.id === runId);
+
+  if (!sourceRun) {
+    return alert("Run sorgente non trovato");
+  }
+
+  const builder = allAgents.find(a =>
+    a.name.toLowerCase() === "builder"
+  );
+
+  if (!builder) {
+    return alert("Crea prima un agente chiamato Builder");
+  }
+
+  const handoffTask =
+    "HANDOFF FROM RUN #" + sourceRun.id + "\n\n" +
+    "Original task:\n" + sourceRun.task + "\n\n" +
+    "Explorer output:\n" + sourceRun.output + "\n\n" +
+    "Builder instruction:\n" +
+    "Trasforma questa analisi nel prossimo piccolo intervento tecnico testabile. " +
+    "Non modificare dati senza approval.";
+
+  const r = await fetch("/api/runs", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      agent_id:builder.id,
+      task:handoffTask
+    })
+  });
+
+  if (!r.ok) {
+    return alert("Errore nella creazione dell'handoff");
+  }
+
+  await Promise.all([
+    loadRuns(),
+    loadAgents()
   ]);
 }
 
