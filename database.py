@@ -105,5 +105,26 @@ def init_db():
         "INTEGER"
     )
 
+    ensure_column(
+        cursor,
+        "runs",
+        "model",
+        "TEXT"
+    )
+
+    ensure_column(
+        cursor,
+        "runs",
+        "context_sources",
+        "TEXT"
+    )
+
+    ensure_column(
+        cursor,
+        "runs",
+        "context_snapshot",
+        "TEXT"
+    )
+
     connection.commit()
     connection.close()
