@@ -13,3 +13,13 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     priority: Optional[str] = None
     project: Optional[str] = None
+
+
+class AgentCreate(BaseModel):
+    name: str
+    role: str
+    project: str = "Officina Lab"
+
+
+class AgentStatusUpdate(BaseModel):
+    status: str
