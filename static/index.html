@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=10">
+    <link rel="stylesheet" href="/static/style.css?v=11">
 </head>
 <body>
     <main class="container">
@@ -43,6 +43,24 @@
                 <button id="create-agent-button">Create Agent</button>
             </div>
             <div id="agents"></div>
+        </section>
+
+        <section class="memory-section">
+            <div class="section-header">
+                <h2>Memory</h2>
+                <span id="memory-count" class="muted">0 memories</span>
+            </div>
+            <div class="memory-form">
+                <input id="memory-content" type="text" placeholder="What should Officina remember?">
+                <input id="memory-project" type="text" value="Officina Lab">
+                <select id="memory-type">
+                    <option value="decision">Decision</option>
+                    <option value="fact">Fact</option>
+                    <option value="note" selected>Note</option>
+                </select>
+                <button id="create-memory-button">Save Memory</button>
+            </div>
+            <div id="memories"></div>
         </section>
 
         <section class="runs-section">
@@ -111,6 +129,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=10"></script>
+    <script src="/static/app.js?v=11"></script>
 </body>
 </html>
