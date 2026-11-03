@@ -10,6 +10,7 @@ from services.context import build_run_context
 from services.llm_provider import (
     DEFAULT_MODEL,
     is_configured,
+    get_api_key_status,
     run_llm
 )
 
@@ -88,7 +89,23 @@ def execute_run(run_id):
         context_package["text"]
     )
 
-    if not is_configured():
+    api_key_status = get_api_key_status()
+
+    if not api_key_status["configured"]:
+        if api_key_status["reason"] == "placeholder":
+            return finish_run(
+                run_id,
+                "failed",
+                (
+                    "OpenAI configuration error: OPENAI_API_KEY "
+                    "contains a placeholder value. Set a real API key "
+                    "in the server terminal before executing this run."
+                ),
+                0,
+                0,
+                0
+            )
+
         output = build_local_output(
             agent,
             run["task"]
