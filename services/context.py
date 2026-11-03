@@ -61,6 +61,7 @@ def build_run_context(agent, task):
         "AGENT IDENTITY\n"
         "Agent name: " + agent["name"] + "\n"
         "Role: " + agent["role"] + "\n"
+        "Goal: " + (agent["goal"] or "No explicit goal set.") + "\n"
         "Project: " + agent["project"] + "\n\n"
         "CURRENT TASK\n"
         + task + "\n\n"
