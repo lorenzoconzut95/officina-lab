@@ -1,5 +1,11 @@
 let allTasks = [];
 
+const priorityWeight = {
+    high: 3,
+    medium: 2,
+    low: 1
+};
+
 function updateStats(tasks) {
     const total = tasks.length;
     const done = tasks.filter(task => task.status === "done").length;
@@ -10,6 +16,36 @@ function updateStats(tasks) {
     document.getElementById("total-count").textContent = total;
 }
 
+function updateNextBestAction(tasks) {
+    const todoTasks = tasks
+        .filter(task => task.status !== "done")
+        .sort((a, b) => {
+            const priorityDifference =
+                priorityWeight[b.priority] - priorityWeight[a.priority];
+
+            if (priorityDifference !== 0) {
+                return priorityDifference;
+            }
+
+            return new Date(a.created_at) - new Date(b.created_at);
+        });
+
+    const title = document.getElementById("next-action-title");
+    const meta = document.getElementById("next-action-meta");
+
+    if (todoTasks.length === 0) {
+        title.textContent = "Nessun task attivo";
+        meta.textContent = "Crea un nuovo task per continuare.";
+        return;
+    }
+
+    const nextTask = todoTasks[0];
+
+    title.textContent = nextTask.title;
+    meta.textContent =
+        `${nextTask.project} · ${nextTask.priority} priority`;
+}
+
 function getFilteredTasks() {
     const status = document.getElementById("filter-status").value;
     const priority = document.getElementById("filter-priority").value;
@@ -18,10 +54,49 @@ function getFilteredTasks() {
     return allTasks.filter(task => {
         const statusMatches = status === "all" || task.status === status;
         const priorityMatches = priority === "all" || task.priority === priority;
-        const projectMatches = !project || task.project.toLowerCase().includes(project);
+        const projectMatches =
+            !project || task.project.toLowerCase().includes(project);
 
         return statusMatches && priorityMatches && projectMatches;
     });
+}
+
+function sortTasks(tasks) {
+    const sortMode = document.getElementById("sort-tasks").value;
+    const sorted = [...tasks];
+
+    if (sortMode === "priority") {
+        sorted.sort((a, b) => {
+            const statusDifference =
+                (a.status === "done") - (b.status === "done");
+
+            if (statusDifference !== 0) {
+                return statusDifference;
+            }
+
+            return priorityWeight[b.priority] - priorityWeight[a.priority];
+        });
+    }
+
+    if (sortMode === "newest") {
+        sorted.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+    }
+
+    if (sortMode === "oldest") {
+        sorted.sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at)
+        );
+    }
+
+    if (sortMode === "project") {
+        sorted.sort((a, b) =>
+            a.project.localeCompare(b.project)
+        );
+    }
+
+    return sorted;
 }
 
 function renderTasks(tasks) {
@@ -29,7 +104,8 @@ function renderTasks(tasks) {
     container.innerHTML = "";
 
     if (tasks.length === 0) {
-        container.innerHTML = "<p>Nessun task corrisponde ai filtri.</p>";
+        container.innerHTML =
+            "<p>Nessun task corrisponde ai filtri.</p>";
         return;
     }
 
@@ -42,15 +118,24 @@ function renderTasks(tasks) {
 
         div.innerHTML = `
             <div class="task-title">${task.title}</div>
+
             <div class="task-meta">
                 Project: ${task.project}<br>
-                Priority: <span class="priority-label">${task.priority}</span><br>
+                Priority:
+                <span class="priority-label">
+                    ${task.priority}
+                </span><br>
                 Status: ${task.status}<br>
                 Created: ${task.created_at}
             </div>
+
             <div class="task-actions">
-                <button onclick="completeTask(${task.id})">Done</button>
-                <button onclick="deleteTask(${task.id})">Delete</button>
+                <button onclick="completeTask(${task.id})">
+                    Done
+                </button>
+                <button onclick="deleteTask(${task.id})">
+                    Delete
+                </button>
             </div>
         `;
 
@@ -59,7 +144,9 @@ function renderTasks(tasks) {
 }
 
 function applyFilters() {
-    renderTasks(getFilteredTasks());
+    const filtered = getFilteredTasks();
+    const sorted = sortTasks(filtered);
+    renderTasks(sorted);
 }
 
 async function loadTasks() {
@@ -67,13 +154,17 @@ async function loadTasks() {
     allTasks = await response.json();
 
     updateStats(allTasks);
+    updateNextBestAction(allTasks);
     applyFilters();
 }
 
 async function createTask() {
-    const title = document.getElementById("task-title").value;
-    const priority = document.getElementById("task-priority").value;
-    const project = document.getElementById("task-project").value;
+    const title =
+        document.getElementById("task-title").value;
+    const priority =
+        document.getElementById("task-priority").value;
+    const project =
+        document.getElementById("task-project").value;
 
     if (!title.trim()) {
         alert("Inserisci un titolo");
@@ -82,8 +173,14 @@ async function createTask() {
 
     const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, priority, project })
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            title,
+            priority,
+            project
+        })
     });
 
     if (!response.ok) {
@@ -96,11 +193,16 @@ async function createTask() {
 }
 
 async function completeTask(taskId) {
-    const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "done" })
-    });
+    const response =
+        await fetch(`/api/tasks/${taskId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                status: "done"
+            })
+        });
 
     if (!response.ok) {
         alert("Errore nell'aggiornamento del task");
@@ -111,9 +213,10 @@ async function completeTask(taskId) {
 }
 
 async function deleteTask(taskId) {
-    const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "DELETE"
-    });
+    const response =
+        await fetch(`/api/tasks/${taskId}`, {
+            method: "DELETE"
+        });
 
     if (!response.ok) {
         alert("Errore nell'eliminazione del task");
@@ -123,9 +226,24 @@ async function deleteTask(taskId) {
     await loadTasks();
 }
 
-document.getElementById("create-task-button").addEventListener("click", createTask);
-document.getElementById("filter-status").addEventListener("change", applyFilters);
-document.getElementById("filter-priority").addEventListener("change", applyFilters);
-document.getElementById("filter-project").addEventListener("input", applyFilters);
+document
+    .getElementById("create-task-button")
+    .addEventListener("click", createTask);
+
+document
+    .getElementById("filter-status")
+    .addEventListener("change", applyFilters);
+
+document
+    .getElementById("filter-priority")
+    .addEventListener("change", applyFilters);
+
+document
+    .getElementById("filter-project")
+    .addEventListener("input", applyFilters);
+
+document
+    .getElementById("sort-tasks")
+    .addEventListener("change", applyFilters);
 
 loadTasks();
