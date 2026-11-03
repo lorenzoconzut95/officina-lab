@@ -108,6 +108,27 @@ def execute_run(run_id):
             context_package
         )
 
+        final_sources = list(
+            context_package["sources"]
+        )
+
+        for tool_name in result.get(
+            "tools_used",
+            []
+        ):
+            final_sources.append(
+                "tool:" + tool_name
+            )
+
+        set_run_context(
+            run_id,
+            result["model"],
+            json.dumps(
+                final_sources
+            ),
+            context_package["text"]
+        )
+
         return finish_run(
             run_id,
             "completed",
