@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from services.memories import list_memories
+
 
 CONTEXT_PATH = (
     Path(__file__).resolve().parent.parent
@@ -19,11 +21,37 @@ def load_officina_context():
     )
 
 
+def format_project_memories(project):
+    memories = list_memories(
+        project=project,
+        limit=8
+    )
+
+    if not memories:
+        return (
+            "No project memories available."
+        )
+
+    lines = []
+
+    for memory in memories:
+        lines.append(
+            "- [" + memory["memory_type"] + "] "
+            + memory["content"]
+        )
+
+    return "\n".join(lines)
+
+
 def build_run_context(agent, task):
     system_context = load_officina_context()
+    memory_context = format_project_memories(
+        agent["project"]
+    )
 
     sources = [
         "context/officina.md",
+        "memory:project:" + agent["project"],
         "agent:" + agent["name"],
         "project:" + agent["project"],
         "task:current_run"
@@ -36,6 +64,8 @@ def build_run_context(agent, task):
         "Project: " + agent["project"] + "\n\n"
         "CURRENT TASK\n"
         + task + "\n\n"
+        "PROJECT MEMORY\n"
+        + memory_context + "\n\n"
         "OFFICINA SYSTEM CONTEXT\n"
         + system_context
     )
