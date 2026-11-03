@@ -10,15 +10,16 @@ def row_to_dict(row):
         "status": row["status"],
         "output": row["output"],
         "started_at": row["started_at"],
-        "ended_at": row["ended_at"]
+        "ended_at": row["ended_at"],
+        "tokens_in": row["tokens_in"],
+        "tokens_out": row["tokens_out"],
+        "cost_usd": row["cost_usd"],
+        "duration_seconds": row["duration_seconds"]
     }
 
 
-def list_runs():
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    cursor.execute("""
+def run_select():
+    return """
         SELECT
             runs.id,
             runs.agent_id,
@@ -27,16 +28,33 @@ def list_runs():
             runs.status,
             runs.output,
             runs.started_at,
-            runs.ended_at
+            runs.ended_at,
+            runs.tokens_in,
+            runs.tokens_out,
+            runs.cost_usd,
+            runs.duration_seconds
         FROM runs
         JOIN agents ON agents.id = runs.agent_id
+    """
+
+
+def list_runs():
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        run_select() + """
         ORDER BY runs.id DESC
-    """)
+        """
+    )
 
     rows = cursor.fetchall()
     connection.close()
 
-    return [row_to_dict(row) for row in rows]
+    return [
+        row_to_dict(row)
+        for row in rows
+    ]
 
 
 def create_run(agent_id, task):
@@ -67,20 +85,12 @@ def get_run(run_id):
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute("""
-        SELECT
-            runs.id,
-            runs.agent_id,
-            agents.name AS agent_name,
-            runs.task,
-            runs.status,
-            runs.output,
-            runs.started_at,
-            runs.ended_at
-        FROM runs
-        JOIN agents ON agents.id = runs.agent_id
+    cursor.execute(
+        run_select() + """
         WHERE runs.id = ?
-    """, (run_id,))
+        """,
+        (run_id,)
+    )
 
     row = cursor.fetchone()
     connection.close()
@@ -91,7 +101,14 @@ def get_run(run_id):
     return row_to_dict(row)
 
 
-def finish_run(run_id, status, output):
+def finish_run(
+    run_id,
+    status,
+    output,
+    tokens_in,
+    tokens_out,
+    cost_usd
+):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -100,11 +117,24 @@ def finish_run(run_id, status, output):
         SET
             status = ?,
             output = ?,
-            ended_at = CURRENT_TIMESTAMP
+            tokens_in = ?,
+            tokens_out = ?,
+            cost_usd = ?,
+            ended_at = CURRENT_TIMESTAMP,
+            duration_seconds = CAST(
+                (
+                    julianday(CURRENT_TIMESTAMP) -
+                    julianday(started_at)
+                ) * 86400
+                AS INTEGER
+            )
         WHERE id = ?
     """, (
         status,
         output,
+        tokens_in,
+        tokens_out,
+        cost_usd,
         run_id
     ))
 
