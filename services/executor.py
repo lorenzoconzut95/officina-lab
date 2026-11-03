@@ -1,0 +1,74 @@
+from repositories.agents import get_agent
+from repositories.runs import get_run
+from services.runs import finish_run
+
+
+def build_local_output(agent, task):
+    role = agent["role"].lower()
+
+    if "research" in role or "explorer" in role:
+        return (
+            "LOCAL EXECUTOR RESULT\n\n"
+            "Agent: " + agent["name"] + "\n"
+            "Role: " + agent["role"] + "\n"
+            "Task: " + task + "\n\n"
+            "Research plan:\n"
+            "1. Define the question precisely.\n"
+            "2. Identify the evidence or sources needed.\n"
+            "3. Collect the relevant facts.\n"
+            "4. Compare conflicting signals.\n"
+            "5. Produce a short synthesis with next steps."
+        )
+
+    if "builder" in role or "engineer" in role:
+        return (
+            "LOCAL EXECUTOR RESULT\n\n"
+            "Agent: " + agent["name"] + "\n"
+            "Role: " + agent["role"] + "\n"
+            "Task: " + task + "\n\n"
+            "Build plan:\n"
+            "1. Define the smallest working output.\n"
+            "2. Identify required inputs and dependencies.\n"
+            "3. Implement the smallest testable version.\n"
+            "4. Verify expected behavior.\n"
+            "5. Record failures and the next iteration."
+        )
+
+    return (
+        "LOCAL EXECUTOR RESULT\n\n"
+        "Agent: " + agent["name"] + "\n"
+        "Role: " + agent["role"] + "\n"
+        "Task: " + task + "\n\n"
+        "Execution plan:\n"
+        "1. Understand the objective.\n"
+        "2. Break it into small steps.\n"
+        "3. Execute the first useful step.\n"
+        "4. Check the result.\n"
+        "5. Report the next action."
+    )
+
+
+def execute_run(run_id):
+    run = get_run(run_id)
+
+    if run is None:
+        return None
+
+    agent = get_agent(run["agent_id"])
+
+    if agent is None:
+        return None
+
+    output = build_local_output(
+        agent,
+        run["task"]
+    )
+
+    return finish_run(
+        run_id,
+        "completed",
+        output,
+        0,
+        0,
+        0
+    )
