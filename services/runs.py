@@ -77,18 +77,8 @@ def create_builder_handoff(run_id):
 
     builders = [
         agent for agent in list_agents()
-        if (
-            agent["name"].lower() == "builder"
-            and agent["project"].lower()
-            == source_run["agent_name"].lower()
-        )
+        if agent["name"].lower() == "builder"
     ]
-
-    if not builders:
-        builders = [
-            agent for agent in list_agents()
-            if agent["name"].lower() == "builder"
-        ]
 
     if not builders:
         return {
