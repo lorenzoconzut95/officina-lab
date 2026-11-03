@@ -36,3 +36,10 @@ class RunFinish(BaseModel):
     tokens_in: int = 0
     tokens_out: int = 0
     cost_usd: float = 0
+
+
+
+class MemoryCreate(BaseModel):
+    content: str
+    project: str = "Officina Lab"
+    memory_type: str = "note"
