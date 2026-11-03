@@ -10,6 +10,20 @@ def get_connection():
     return connection
 
 
+def ensure_column(cursor, table, column, definition):
+    cursor.execute("PRAGMA table_info(" + table + ")")
+    existing_columns = {
+        row[1]
+        for row in cursor.fetchall()
+    }
+
+    if column not in existing_columns:
+        cursor.execute(
+            "ALTER TABLE " + table +
+            " ADD COLUMN " + column + " " + definition
+        )
+
+
 def init_db():
     connection = get_connection()
     cursor = connection.cursor()
@@ -55,9 +69,41 @@ def init_db():
             output TEXT,
             started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             ended_at TEXT,
+            tokens_in INTEGER NOT NULL DEFAULT 0,
+            tokens_out INTEGER NOT NULL DEFAULT 0,
+            cost_usd REAL NOT NULL DEFAULT 0,
+            duration_seconds INTEGER,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         )
     """)
+
+    ensure_column(
+        cursor,
+        "runs",
+        "tokens_in",
+        "INTEGER NOT NULL DEFAULT 0"
+    )
+
+    ensure_column(
+        cursor,
+        "runs",
+        "tokens_out",
+        "INTEGER NOT NULL DEFAULT 0"
+    )
+
+    ensure_column(
+        cursor,
+        "runs",
+        "cost_usd",
+        "REAL NOT NULL DEFAULT 0"
+    )
+
+    ensure_column(
+        cursor,
+        "runs",
+        "duration_seconds",
+        "INTEGER"
+    )
 
     connection.commit()
     connection.close()
