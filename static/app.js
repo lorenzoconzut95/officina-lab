@@ -12,6 +12,18 @@ function updateStats(tasks) {
   document.getElementById("total-count").textContent = total;
 }
 
+function updateRunStats(runs) {
+  const running = runs.filter(r => r.status === "running").length;
+  const completed = runs.filter(r => r.status === "completed").length;
+  const tokens = runs.reduce((sum,r) => sum + (r.tokens_in || 0) + (r.tokens_out || 0), 0);
+  const cost = runs.reduce((sum,r) => sum + Number(r.cost_usd || 0), 0);
+
+  document.getElementById("running-count").textContent = running;
+  document.getElementById("completed-count").textContent = completed;
+  document.getElementById("token-count").textContent = tokens.toLocaleString();
+  document.getElementById("cost-total").textContent = "$" + cost.toFixed(4);
+}
+
 function updateNextBestAction(tasks) {
   const todo = [...tasks]
     .filter(t => t.status !== "done")
@@ -119,6 +131,15 @@ function renderRuns(runs) {
     if (r.ended_at) html += '<br>Ended: ' + r.ended_at;
 
     html += '</div><span class="run-status ' + r.status + '">' + r.status + '</span>';
+
+    const totalTokens = (r.tokens_in || 0) + (r.tokens_out || 0);
+
+    html +=
+      '<div class="run-metrics">' +
+      'Tokens: ' + totalTokens.toLocaleString() +
+      ' · Cost: $' + Number(r.cost_usd || 0).toFixed(4) +
+      (r.duration_seconds != null ? ' · Duration: ' + r.duration_seconds + 's' : '') +
+      '</div>';
 
     if (r.output) {
       html += '<div class="run-output">' + r.output + '</div>';
@@ -232,6 +253,7 @@ async function loadAgents() {
 async function loadRuns() {
   const r = await fetch("/api/runs");
   allRuns = await r.json();
+  updateRunStats(allRuns);
   renderRuns(allRuns);
 }
 
@@ -335,10 +357,20 @@ async function finishRun(id,status) {
   const output = prompt("Output del run:","Run completato.");
   if (output === null) return;
 
+  const tokensIn = Number(prompt("Token input:", "0") || 0);
+  const tokensOut = Number(prompt("Token output:", "0") || 0);
+  const costUsd = Number(prompt("Costo USD:", "0") || 0);
+
   const r = await fetch("/api/runs/" + id + "/finish", {
     method:"PATCH",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({status,output})
+    body:JSON.stringify({
+      status,
+      output,
+      tokens_in:tokensIn,
+      tokens_out:tokensOut,
+      cost_usd:costUsd
+    })
   });
 
   if (!r.ok) return alert("Errore nella chiusura del run");
