@@ -297,7 +297,11 @@ function renderRuns(runs) {
         '</div>';
     }
 
-    if (r.status === "completed" && r.output) {
+    if (
+      r.status === "completed" &&
+      r.output &&
+      r.agent_name.toLowerCase() === "explorer"
+    ) {
       html +=
         '<div class="run-actions">' +
         '<button onclick="handoffToBuilder(' + r.id + ')">Handoff to Builder</button>' +
