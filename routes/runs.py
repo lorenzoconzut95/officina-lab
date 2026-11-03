@@ -35,7 +35,10 @@ def finish_existing_run(
     run = finish_run(
         run_id,
         update.status,
-        update.output
+        update.output,
+        update.tokens_in,
+        update.tokens_out,
+        update.cost_usd
     )
 
     if run is None:
