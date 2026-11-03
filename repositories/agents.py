@@ -93,3 +93,36 @@ def update_agent_status(agent_id, status):
     connection.close()
 
     return get_agent(agent_id)
+
+
+
+def update_agent(
+    agent_id,
+    name,
+    role,
+    goal,
+    project
+):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE agents
+        SET
+            name = ?,
+            role = ?,
+            goal = ?,
+            project = ?
+        WHERE id = ?
+    """, (
+        name,
+        role,
+        goal,
+        project,
+        agent_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+    return get_agent(agent_id)
