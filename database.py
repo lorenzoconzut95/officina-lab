@@ -46,5 +46,18 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS runs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER NOT NULL,
+            task TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'running',
+            output TEXT,
+            started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            ended_at TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        )
+    """)
+
     connection.commit()
     connection.close()
