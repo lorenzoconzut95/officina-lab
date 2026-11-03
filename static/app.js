@@ -2,6 +2,7 @@ let allTasks = [];
 let allAgents = [];
 let allRuns = [];
 let allMemories = [];
+let allApprovals = [];
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -128,6 +129,53 @@ function renderMemories(memories) {
       '<div class="memory-type">' + m.memory_type + '</div>' +
       '<div class="memory-content">' + m.content + '</div>' +
       '<div class="memory-meta">' + m.project + ' · ' + m.created_at + '</div>';
+    c.appendChild(card);
+  });
+}
+
+function renderApprovals(approvals) {
+  const c = document.getElementById("approvals");
+  const pending = approvals.filter(a => a.status === "pending");
+
+  document.getElementById("approval-count").textContent =
+    pending.length + " pending";
+
+  c.innerHTML = "";
+
+  if (!approvals.length) {
+    c.innerHTML = "<p>Nessuna approval richiesta.</p>";
+    return;
+  }
+
+  approvals.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "approval-card";
+
+    const payload = JSON.stringify(
+      a.payload,
+      null,
+      2
+    );
+
+    let actions = "";
+
+    if (a.status === "pending") {
+      actions =
+        '<div class="approval-actions">' +
+        '<button onclick="approveRequest(' + a.id + ')">Approve</button>' +
+        '<button onclick="rejectRequest(' + a.id + ')">Reject</button>' +
+        '</div>';
+    }
+
+    card.innerHTML =
+      '<div class="approval-title">' + a.action + '</div>' +
+      '<div class="approval-meta">Agent: ' + a.agent_name +
+      (a.run_id ? ' · Run: ' + a.run_id : '') +
+      '<br>Created: ' + a.created_at + '</div>' +
+      '<div class="approval-payload">' + payload + '</div>' +
+      '<span class="approval-status ' + a.status + '">' + a.status + '</span>' +
+      actions;
+
     c.appendChild(card);
   });
 }
@@ -296,13 +344,26 @@ async function loadMemories() {
   renderMemories(allMemories);
 }
 
+async function loadApprovals() {
+  const r = await fetch("/api/approvals");
+  allApprovals = await r.json();
+  renderApprovals(allApprovals);
+}
+
 async function loadActivity() {
   const r = await fetch("/api/activity?limit=15");
   renderActivity(await r.json());
 }
 
 async function refreshDashboard() {
-  await Promise.all([loadTasks(), loadAgents(), loadRuns(), loadMemories(), loadActivity()]);
+  await Promise.all([
+    loadTasks(),
+    loadAgents(),
+    loadRuns(),
+    loadMemories(),
+    loadApprovals(),
+    loadActivity()
+  ]);
 }
 
 async function createTask() {
@@ -390,6 +451,32 @@ async function createMemory() {
   if (!r.ok) return alert("Errore nel salvataggio della memoria");
   document.getElementById("memory-content").value = "";
   await loadMemories();
+}
+
+async function approveRequest(id) {
+  const r = await fetch(
+    "/api/approvals/" + id + "/approve",
+    { method: "POST" }
+  );
+
+  if (!r.ok) return alert("Errore nell'approvazione");
+
+  await Promise.all([
+    loadApprovals(),
+    loadTasks(),
+    loadActivity()
+  ]);
+}
+
+async function rejectRequest(id) {
+  const r = await fetch(
+    "/api/approvals/" + id + "/reject",
+    { method: "POST" }
+  );
+
+  if (!r.ok) return alert("Errore nel rifiuto");
+
+  await loadApprovals();
 }
 
 async function startRun() {
