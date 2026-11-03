@@ -112,7 +112,11 @@ function fillRunAgentSelect() {
   allAgents.forEach(a => {
     const option = document.createElement("option");
     option.value = a.id;
-    option.textContent = a.name + " · " + a.role;
+    option.textContent =
+      "#" + a.id + " · " +
+      a.name + " · " +
+      a.role + " · " +
+      (a.goal ? "goal ✓" : "goal —");
     select.appendChild(option);
   });
 }
