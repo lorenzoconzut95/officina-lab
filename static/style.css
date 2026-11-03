@@ -18,7 +18,31 @@ h1 {
 
 .subtitle {
     color: #999;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.stat-label {
+    display: block;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.stat-card strong {
+    font-size: 28px;
 }
 
 .task {
@@ -108,4 +132,10 @@ h1 {
 .new-task button {
     cursor: pointer;
     font-weight: bold;
+}
+
+@media (max-width: 640px) {
+    .stats {
+        grid-template-columns: 1fr;
+    }
 }
