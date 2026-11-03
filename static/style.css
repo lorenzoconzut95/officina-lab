@@ -162,6 +162,38 @@ h1 {
     font-weight: bold;
 }
 
+.activity-section {
+    margin-top: 40px;
+}
+
+.activity-item {
+    display: grid;
+    grid-template-columns: 90px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.activity-action {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.activity-action.created { color: #28c840; }
+.activity-action.updated { color: #ffbd2e; }
+.activity-action.deleted { color: #ff5f57; }
+
+.activity-main {
+    color: #ddd;
+}
+
+.activity-time {
+    color: #777;
+    font-size: 12px;
+}
+
 @media (max-width: 640px) {
     .stats {
         grid-template-columns: 1fr;
@@ -169,5 +201,9 @@ h1 {
 
     .filters {
         flex-direction: column;
+    }
+
+    .activity-item {
+        grid-template-columns: 1fr;
     }
 }
