@@ -6,6 +6,7 @@ from repositories.runs import list_runs
 from repositories.tool_calls import list_tool_calls
 from services.approvals import create_approval
 from services.tool_calls import log_tool_call
+from services.project_state import build_project_state
 
 
 TOOL_DEFINITIONS = [
@@ -234,85 +235,14 @@ def execute_tool(
 
     elif name == "inspect_project_state":
         project = arguments["project"]
-        limit = min(
-            arguments.get("limit", 5),
-            8
-        )
-
-        project_tasks = [
-            task for task in list_tasks()
-            if task["project"].lower() == project.lower()
-        ]
-
-        project_memories = list_memories(
-            project=project,
-            limit=limit
-        )
-
-        recent_runs = list_runs()[:limit]
-        recent_tool_calls = list_tool_calls(
-            limit=limit
-        )
+        limit = arguments.get("limit", 5)
 
         result = {
             "tool": "inspect_project_state",
-            "project": project,
-            "covers": [
-                "tasks",
-                "memories",
-                "recent_runs",
-                "recent_tool_calls"
-            ],
-            "summary": {
-                "task_count": len(project_tasks),
-                "todo_count": len([
-                    task for task in project_tasks
-                    if task["status"] == "todo"
-                ]),
-                "done_count": len([
-                    task for task in project_tasks
-                    if task["status"] == "done"
-                ]),
-                "memory_count": len(project_memories),
-                "recent_run_count": len(recent_runs),
-                "recent_tool_call_count": len(recent_tool_calls)
-            },
-            "tasks": [
-                {
-                    "id": task["id"],
-                    "title": task["title"],
-                    "status": task["status"],
-                    "priority": task["priority"]
-                }
-                for task in project_tasks
-            ],
-            "memories": [
-                {
-                    "type": memory["memory_type"],
-                    "content": memory["content"]
-                }
-                for memory in project_memories
-            ],
-            "recent_runs": [
-                {
-                    "id": run["id"],
-                    "task": run["task"],
-                    "status": run["status"],
-                    "context_sources": run["context_sources"],
-                    "output_preview": (
-                        (run["output"] or "")[:280]
-                    )
-                }
-                for run in recent_runs
-            ],
-            "recent_tool_calls": [
-                {
-                    "tool_name": item["tool_name"],
-                    "arguments": item["arguments"],
-                    "run_id": item["run_id"]
-                }
-                for item in recent_tool_calls
-            ]
+            **build_project_state(
+                project=project,
+                limit=limit
+            )
         }
 
     elif name == "create_task":
