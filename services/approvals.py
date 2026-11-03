@@ -7,8 +7,11 @@ from repositories.approvals import (
 
 from services.tasks import (
     create_task,
+    get_task,
     update_task
 )
+
+from services.memories import create_memory
 
 
 def list_approvals(status=None):
@@ -31,6 +34,30 @@ def create_approval(
     )
 
 
+def remember_approved_action(
+    approval,
+    project,
+    description
+):
+    create_memory(
+        (
+            "Approved agent action: "
+            + description
+            + ". Proposed by "
+            + approval["agent_name"]
+            + (
+                " in run #"
+                + str(approval["run_id"])
+                if approval["run_id"]
+                else ""
+            )
+            + "."
+        ),
+        project,
+        "decision"
+    )
+
+
 def approve(approval_id):
     approval = repo_get_approval(
         approval_id
@@ -45,7 +72,7 @@ def approve(approval_id):
     if approval["action"] == "create_task":
         payload = approval["payload"]
 
-        create_task(
+        task = create_task(
             payload["title"],
             payload.get(
                 "priority",
@@ -57,13 +84,46 @@ def approve(approval_id):
             )
         )
 
+        remember_approved_action(
+            approval,
+            task["project"],
+            (
+                "created task #"
+                + str(task["id"])
+                + " \""
+                + task["title"]
+                + "\" with priority "
+                + task["priority"]
+            )
+        )
+
     if approval["action"] == "update_task_status":
         payload = approval["payload"]
 
-        update_task(
-            payload["task_id"],
-            status=payload["status"]
+        existing_task = get_task(
+            payload["task_id"]
         )
+
+        if existing_task is not None:
+            updated_task = update_task(
+                payload["task_id"],
+                status=payload["status"]
+            )
+
+            remember_approved_action(
+                approval,
+                updated_task["project"],
+                (
+                    "changed task #"
+                    + str(updated_task["id"])
+                    + " \""
+                    + updated_task["title"]
+                    + "\" status from "
+                    + existing_task["status"]
+                    + " to "
+                    + updated_task["status"]
+                )
+            )
 
     return repo_resolve_approval(
         approval_id,
