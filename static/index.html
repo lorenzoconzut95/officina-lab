@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=9">
+    <link rel="stylesheet" href="/static/style.css?v=10">
 </head>
 <body>
     <main class="container">
@@ -50,11 +50,20 @@
                 <h2>Agent Runs</h2>
                 <span id="run-count" class="muted">0 runs</span>
             </div>
+
+            <section class="run-stats">
+                <div class="stat-card"><span class="stat-label">Running</span><strong id="running-count">0</strong></div>
+                <div class="stat-card"><span class="stat-label">Completed</span><strong id="completed-count">0</strong></div>
+                <div class="stat-card"><span class="stat-label">Tokens</span><strong id="token-count">0</strong></div>
+                <div class="stat-card"><span class="stat-label">Cost</span><strong id="cost-total">$0.00</strong></div>
+            </section>
+
             <div class="run-form">
                 <select id="run-agent"></select>
                 <input id="run-task" type="text" placeholder="Run task">
                 <button id="start-run-button">Start Run</button>
             </div>
+
             <div id="runs"></div>
         </section>
 
@@ -102,6 +111,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=9"></script>
+    <script src="/static/app.js?v=10"></script>
 </body>
 </html>
