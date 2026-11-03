@@ -5,11 +5,12 @@ from fastapi.responses import FileResponse
 from database import init_db
 from routes.tasks import router as tasks_router
 from routes.activity import router as activity_router
+from routes.agents import router as agents_router
 
 
 app = FastAPI(
     title="Officina Lab API",
-    version="0.7"
+    version="0.8"
 )
 
 
@@ -37,6 +38,7 @@ def health():
 
 app.include_router(tasks_router)
 app.include_router(activity_router)
+app.include_router(agents_router)
 
 
 init_db()
