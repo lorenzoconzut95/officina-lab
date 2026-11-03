@@ -1,6 +1,10 @@
 from repositories.agents import get_agent
 from repositories.runs import get_run
 from services.runs import finish_run
+from services.llm_provider import (
+    is_configured,
+    run_llm
+)
 
 
 def build_local_output(agent, task):
@@ -54,21 +58,49 @@ def execute_run(run_id):
     if run is None:
         return None
 
-    agent = get_agent(run["agent_id"])
+    agent = get_agent(
+        run["agent_id"]
+    )
 
     if agent is None:
         return None
 
-    output = build_local_output(
-        agent,
-        run["task"]
-    )
+    if not is_configured():
+        output = build_local_output(
+            agent,
+            run["task"]
+        )
 
-    return finish_run(
-        run_id,
-        "completed",
-        output,
-        0,
-        0,
-        0
-    )
+        return finish_run(
+            run_id,
+            "completed",
+            output,
+            0,
+            0,
+            0
+        )
+
+    try:
+        result = run_llm(
+            agent,
+            run["task"]
+        )
+
+        return finish_run(
+            run_id,
+            "completed",
+            result["output"],
+            result["tokens_in"],
+            result["tokens_out"],
+            result["cost_usd"]
+        )
+
+    except Exception as error:
+        return finish_run(
+            run_id,
+            "failed",
+            "LLM execution failed: " + str(error),
+            0,
+            0,
+            0
+        )
