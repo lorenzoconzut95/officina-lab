@@ -57,6 +57,22 @@ def calculate_cost(tokens_in, tokens_out):
     )
 
 
+def tools_after_calls(tools_used):
+    if "inspect_project_state" not in tools_used:
+        return TOOL_DEFINITIONS
+
+    redundant = {
+        "list_tasks",
+        "list_memories",
+        "list_recent_runs"
+    }
+
+    return [
+        tool for tool in TOOL_DEFINITIONS
+        if tool["name"] not in redundant
+    ]
+
+
 def run_llm(agent, task, context_package):
     client = OpenAI()
 
@@ -65,6 +81,10 @@ def run_llm(agent, task, context_package):
         "Act according to the assigned role. "
         "Be concise, practical, and structured. "
         "Use tools when current Officina data or an action is needed. "
+        "For project-wide inspection, prefer inspect_project_state. "
+        "If inspect_project_state is used, do not request list_tasks, "
+        "list_memories, or list_recent_runs afterward because that data "
+        "is already included. "
         "Write tools are protected by human approval. "
         "If a write tool returns approval_required, clearly tell the user "
         "that the action is only proposed and has NOT happened yet. "
