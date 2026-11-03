@@ -1,6 +1,19 @@
+function updateStats(tasks) {
+    const total = tasks.length;
+    const done = tasks.filter(task => task.status === "done").length;
+    const todo = total - done;
+
+    document.getElementById("todo-count").textContent = todo;
+    document.getElementById("done-count").textContent = done;
+    document.getElementById("total-count").textContent = total;
+}
+
+
 async function loadTasks() {
     const response = await fetch("/api/tasks");
     const tasks = await response.json();
+
+    updateStats(tasks);
 
     const container = document.getElementById("tasks");
     container.innerHTML = "";
