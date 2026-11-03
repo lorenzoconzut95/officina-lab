@@ -2,6 +2,7 @@ import json
 
 from repositories.tasks import list_tasks
 from repositories.memories import list_memories
+from repositories.runs import list_runs
 from services.approvals import create_approval
 from services.tool_calls import log_tool_call
 
@@ -49,6 +50,32 @@ TOOL_DEFINITIONS = [
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 20
+                }
+            },
+            "required": [],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "list_recent_runs",
+        "description": (
+            "Read recent Officina agent runs. "
+            "Use this to verify what has actually been executed, "
+            "which context sources were used, and whether recent work "
+            "provides evidence that a task may already be complete."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                },
+                "status": {
+                    "type": "string",
+                    "enum": ["all", "running", "completed", "failed"]
                 }
             },
             "required": [],
@@ -142,6 +169,39 @@ def execute_tool(
             "tool": "list_memories",
             "count": len(memories),
             "items": memories
+        }
+
+    elif name == "list_recent_runs":
+        limit = arguments.get("limit", 8)
+        status = arguments.get("status", "all")
+
+        runs = list_runs()
+
+        if status != "all":
+            runs = [
+                run for run in runs
+                if run["status"] == status
+            ]
+
+        items = []
+
+        for run in runs[:limit]:
+            items.append({
+                "id": run["id"],
+                "agent_name": run["agent_name"],
+                "task": run["task"],
+                "status": run["status"],
+                "output": run["output"],
+                "started_at": run["started_at"],
+                "ended_at": run["ended_at"],
+                "model": run["model"],
+                "context_sources": run["context_sources"]
+            })
+
+        result = {
+            "tool": "list_recent_runs",
+            "count": len(items),
+            "items": items
         }
 
     elif name == "create_task":
