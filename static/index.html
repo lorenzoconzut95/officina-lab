@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=8">
+    <link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 <body>
     <main class="container">
@@ -36,15 +36,26 @@
                 <h2>Agents</h2>
                 <span id="agent-count" class="muted">0 agents</span>
             </div>
-
             <div class="agent-form">
                 <input id="agent-name" type="text" placeholder="Agent name">
                 <input id="agent-role" type="text" placeholder="Role">
                 <input id="agent-project" type="text" value="Officina Lab">
                 <button id="create-agent-button">Create Agent</button>
             </div>
-
             <div id="agents"></div>
+        </section>
+
+        <section class="runs-section">
+            <div class="section-header">
+                <h2>Agent Runs</h2>
+                <span id="run-count" class="muted">0 runs</span>
+            </div>
+            <div class="run-form">
+                <select id="run-agent"></select>
+                <input id="run-task" type="text" placeholder="Run task">
+                <button id="start-run-button">Start Run</button>
+            </div>
+            <div id="runs"></div>
         </section>
 
         <section class="filters">
@@ -91,6 +102,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=8"></script>
+    <script src="/static/app.js?v=9"></script>
 </body>
 </html>
