@@ -26,7 +26,14 @@ def create_run(agent_id, task):
     return run
 
 
-def finish_run(run_id, status, output):
+def finish_run(
+    run_id,
+    status,
+    output,
+    tokens_in,
+    tokens_out,
+    cost_usd
+):
     run = repo_get_run(run_id)
 
     if run is None:
@@ -35,7 +42,10 @@ def finish_run(run_id, status, output):
     finished = repo_finish_run(
         run_id,
         status,
-        output
+        output,
+        tokens_in,
+        tokens_out,
+        cost_usd
     )
 
     update_agent_status(
