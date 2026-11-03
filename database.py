@@ -96,6 +96,17 @@ def init_db():
     """)
 
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS errors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER,
+            agent_name TEXT NOT NULL,
+            task TEXT NOT NULL,
+            error_message TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,
