@@ -6,6 +6,7 @@ from repositories.runs import (
 )
 
 from services.agents import update_agent_status
+from services.errors import log_run_error
 
 
 def list_runs():
@@ -52,5 +53,13 @@ def finish_run(
         run["agent_id"],
         "idle"
     )
+
+    if status == "failed":
+        log_run_error(
+            run_id,
+            run["agent_name"],
+            run["task"],
+            output
+        )
 
     return finished
