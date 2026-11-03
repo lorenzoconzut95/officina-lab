@@ -18,6 +18,7 @@ class TaskUpdate(BaseModel):
 class AgentCreate(BaseModel):
     name: str
     role: str
+    goal: str = ""
     project: str = "Officina Lab"
 
 
@@ -36,7 +37,6 @@ class RunFinish(BaseModel):
     tokens_in: int = 0
     tokens_out: int = 0
     cost_usd: float = 0
-
 
 
 class MemoryCreate(BaseModel):
