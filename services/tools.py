@@ -2,6 +2,7 @@ import json
 
 from repositories.tasks import list_tasks
 from repositories.memories import list_memories
+from services.approvals import create_approval
 
 
 TOOL_DEFINITIONS = [
@@ -60,11 +61,45 @@ TOOL_DEFINITIONS = [
             "required": [],
             "additionalProperties": False
         }
+    },
+    {
+        "type": "function",
+        "name": "create_task",
+        "description": (
+            "Propose creating a new Officina task. "
+            "This is a protected write action: it NEVER writes immediately. "
+            "It creates an approval request that the user must approve or reject."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Task title."
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"],
+                    "description": "Task priority."
+                },
+                "project": {
+                    "type": "string",
+                    "description": "Project name."
+                }
+            },
+            "required": ["title", "priority", "project"],
+            "additionalProperties": False
+        }
     }
 ]
 
 
-def execute_tool(name, arguments):
+def execute_tool(
+    name,
+    arguments,
+    agent_name=None,
+    run_id=None
+):
     if name == "list_tasks":
         project = arguments.get("project")
         status = arguments.get("status", "all")
@@ -107,12 +142,36 @@ def execute_tool(name, arguments):
             "items": memories
         }
 
+    if name == "create_task":
+        approval = create_approval(
+            "create_task",
+            arguments,
+            agent_name or "unknown-agent",
+            run_id
+        )
+
+        return {
+            "tool": "create_task",
+            "status": "approval_required",
+            "approval_id": approval["id"],
+            "message": (
+                "Task creation has NOT been executed. "
+                "A human approval is required."
+            ),
+            "proposed_action": arguments
+        }
+
     return {
         "error": "Unknown tool: " + name
     }
 
 
-def execute_tool_json(name, arguments_json):
+def execute_tool_json(
+    name,
+    arguments_json,
+    agent_name=None,
+    run_id=None
+):
     try:
         arguments = json.loads(
             arguments_json or "{}"
@@ -122,5 +181,7 @@ def execute_tool_json(name, arguments_json):
 
     return execute_tool(
         name,
-        arguments
+        arguments,
+        agent_name=agent_name,
+        run_id=run_id
     )
