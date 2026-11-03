@@ -24,6 +24,7 @@ def create_new_agent(agent: AgentCreate):
     return create_agent(
         agent.name,
         agent.role,
+        agent.goal,
         agent.project
     )
 
