@@ -3,6 +3,7 @@ let allAgents = [];
 let allRuns = [];
 let allMemories = [];
 let allApprovals = [];
+let allToolCalls = [];
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -180,6 +181,37 @@ function renderApprovals(approvals) {
   });
 }
 
+function renderToolCalls(items) {
+  const c = document.getElementById("tool-calls");
+  document.getElementById("tool-call-count").textContent =
+    items.length + " calls";
+
+  c.innerHTML = "";
+
+  if (!items.length) {
+    c.innerHTML = "<p>Nessuna tool call registrata.</p>";
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "tool-call-card";
+
+    card.innerHTML =
+      '<div class="tool-call-name">' + item.tool_name + '</div>' +
+      '<div class="tool-call-meta">Agent: ' + item.agent_name +
+      (item.run_id ? ' · Run: ' + item.run_id : '') +
+      '<br>' + item.created_at + '</div>' +
+      '<div class="tool-call-json">Args:\n' +
+      JSON.stringify(item.arguments, null, 2) +
+      '\n\nResult:\n' +
+      JSON.stringify(item.result, null, 2) +
+      '</div>';
+
+    c.appendChild(card);
+  });
+}
+
 function renderRuns(runs) {
   const c = document.getElementById("runs");
   document.getElementById("run-count").textContent = runs.length + " runs";
@@ -350,6 +382,12 @@ async function loadApprovals() {
   renderApprovals(allApprovals);
 }
 
+async function loadToolCalls() {
+  const r = await fetch("/api/tool-calls?limit=30");
+  allToolCalls = await r.json();
+  renderToolCalls(allToolCalls);
+}
+
 async function loadActivity() {
   const r = await fetch("/api/activity?limit=15");
   renderActivity(await r.json());
@@ -362,6 +400,7 @@ async function refreshDashboard() {
     loadRuns(),
     loadMemories(),
     loadApprovals(),
+    loadToolCalls(),
     loadActivity()
   ]);
 }
@@ -464,6 +503,7 @@ async function approveRequest(id) {
   await Promise.all([
     loadApprovals(),
     loadTasks(),
+    loadToolCalls(),
     loadActivity()
   ]);
 }
@@ -495,7 +535,12 @@ async function startRun() {
 
   if (!r.ok) return alert("Errore nell'avvio del run");
   document.getElementById("run-task").value = "";
-  await Promise.all([loadRuns(),loadAgents()]);
+  await Promise.all([
+    loadRuns(),
+    loadAgents(),
+    loadApprovals(),
+    loadToolCalls()
+  ]);
 }
 
 async function executeRun(id) {
