@@ -92,7 +92,9 @@ function renderAgents(agents) {
     card.className = "agent-card";
     card.innerHTML =
       '<div class="agent-name">' + a.name + '</div>' +
-      '<div class="agent-meta">' + a.role + '<br>' + a.project + '</div>' +
+      '<div class="agent-meta">' + a.role +
+      '<br>Goal: ' + (a.goal || 'No goal set') +
+      '<br>' + a.project + '</div>' +
       '<span class="agent-status">' + a.status + '</span>' +
       '<div class="agent-actions">' +
       '<button onclick="setAgentStatus(' + a.id + ',\'working\')">Working</button>' +
@@ -478,6 +480,7 @@ async function deleteTask(id) {
 async function createAgent() {
   const name = document.getElementById("agent-name").value;
   const role = document.getElementById("agent-role").value;
+  const goal = document.getElementById("agent-goal").value;
   const project = document.getElementById("agent-project").value;
 
   if (!name.trim() || !role.trim()) return alert("Inserisci nome e ruolo dell'agente");
@@ -485,12 +488,13 @@ async function createAgent() {
   const r = await fetch("/api/agents", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({name,role,project})
+    body:JSON.stringify({name,role,goal,project})
   });
 
   if (!r.ok) return alert("Errore nella creazione dell'agente");
   document.getElementById("agent-name").value = "";
   document.getElementById("agent-role").value = "";
+  document.getElementById("agent-goal").value = "";
   await loadAgents();
 }
 
