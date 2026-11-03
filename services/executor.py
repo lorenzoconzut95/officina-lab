@@ -1,7 +1,14 @@
+import json
+
 from repositories.agents import get_agent
-from repositories.runs import get_run
+from repositories.runs import (
+    get_run,
+    set_run_context
+)
 from services.runs import finish_run
+from services.context import build_run_context
 from services.llm_provider import (
+    DEFAULT_MODEL,
     is_configured,
     run_llm
 )
@@ -65,6 +72,20 @@ def execute_run(run_id):
     if agent is None:
         return None
 
+    context_package = build_run_context(
+        agent,
+        run["task"]
+    )
+
+    set_run_context(
+        run_id,
+        DEFAULT_MODEL if is_configured() else "local-executor",
+        json.dumps(
+            context_package["sources"]
+        ),
+        context_package["text"]
+    )
+
     if not is_configured():
         output = build_local_output(
             agent,
@@ -83,7 +104,8 @@ def execute_run(run_id):
     try:
         result = run_llm(
             agent,
-            run["task"]
+            run["task"],
+            context_package
         )
 
         return finish_run(
