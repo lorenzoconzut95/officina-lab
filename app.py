@@ -6,11 +6,12 @@ from database import init_db
 from routes.tasks import router as tasks_router
 from routes.activity import router as activity_router
 from routes.agents import router as agents_router
+from routes.runs import router as runs_router
 
 
 app = FastAPI(
     title="Officina Lab API",
-    version="0.8"
+    version="0.9"
 )
 
 
@@ -39,6 +40,7 @@ def health():
 app.include_router(tasks_router)
 app.include_router(activity_router)
 app.include_router(agents_router)
+app.include_router(runs_router)
 
 
 init_db()
