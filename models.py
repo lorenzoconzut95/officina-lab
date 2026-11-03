@@ -43,3 +43,11 @@ class MemoryCreate(BaseModel):
     content: str
     project: str = "Officina Lab"
     memory_type: str = "note"
+
+
+
+class AgentUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    goal: Optional[str] = None
+    project: Optional[str] = None
