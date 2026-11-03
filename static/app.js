@@ -137,9 +137,286 @@ function renderRuns(runs) {
     html +=
       '<div class="run-metrics">' +
       'Tokens: ' + totalTokens.toLocaleString() +
-      ' · Cost: $' + Number(r.cost_usd || 0).toFixed(4) +
-      (r.duration_seconds != null ? ' · Duration: ' + r.duration_seconds + 's' : '') +
+      ' · Cost: 
+
+    if (r.output) {
+      html += '<div class="run-output">' + r.output + '</div>';
+    }
+
+    if (r.status === "running") {
+      html +=
+        '<div class="run-actions">' +
+        '<button onclick="executeRun(' + r.id + ')">Execute</button>' +
+        '<button onclick="finishRun(' + r.id + ',\'completed\')">Complete</button>' +
+        '<button onclick="finishRun(' + r.id + ',\'failed\')">Fail</button>' +
+        '</div>';
+    }
+
+    card.innerHTML = html;
+    c.appendChild(card);
+  });
+}
+
+function getFilteredTasks() {
+  const status = document.getElementById("filter-status").value;
+  const priority = document.getElementById("filter-priority").value;
+  const project = document.getElementById("filter-project").value.trim().toLowerCase();
+
+  return allTasks.filter(t =>
+    (status === "all" || t.status === status) &&
+    (priority === "all" || t.priority === priority) &&
+    (!project || t.project.toLowerCase().includes(project))
+  );
+}
+
+function sortTasks(tasks) {
+  const mode = document.getElementById("sort-tasks").value;
+  const s = [...tasks];
+
+  if (mode === "priority") {
+    s.sort((a,b) => (a.status === "done") - (b.status === "done") || priorityWeight[b.priority] - priorityWeight[a.priority]);
+  }
+  if (mode === "newest") s.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  if (mode === "oldest") s.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+  if (mode === "project") s.sort((a,b) => a.project.localeCompare(b.project));
+
+  return s;
+}
+
+function renderTasks(tasks) {
+  const c = document.getElementById("tasks");
+  c.innerHTML = "";
+
+  if (!tasks.length) {
+    c.innerHTML = "<p>Nessun task corrisponde ai filtri.</p>";
+    return;
+  }
+
+  tasks.forEach(t => {
+    const d = document.createElement("div");
+    d.className = "task priority-" + t.priority + " " + (t.status === "done" ? "done" : "");
+    d.innerHTML =
+      '<div class="task-title">' + t.title + '</div>' +
+      '<div class="task-meta">Project: ' + t.project +
+      '<br>Priority: <span class="priority-label">' + t.priority + '</span>' +
+      '<br>Status: ' + t.status +
+      '<br>Created: ' + t.created_at + '</div>' +
+      '<div class="task-actions">' +
+      '<button onclick="completeTask(' + t.id + ')">Done</button>' +
+      '<button onclick="deleteTask(' + t.id + ')">Delete</button>' +
       '</div>';
+    c.appendChild(d);
+  });
+}
+
+function renderActivity(items) {
+  const c = document.getElementById("activity-log");
+  c.innerHTML = "";
+
+  if (!items.length) {
+    c.innerHTML = "<p>Nessuna attività registrata.</p>";
+    return;
+  }
+
+  items.forEach(i => {
+    const d = document.createElement("div");
+    d.className = "activity-item";
+    d.innerHTML =
+      '<span class="activity-action ' + i.action + '">' + i.action + '</span>' +
+      '<span class="activity-main">' + i.task_title + ' · ' + i.project + '</span>' +
+      '<span class="activity-time">' + i.created_at + '</span>';
+    c.appendChild(d);
+  });
+}
+
+function applyFilters() {
+  renderTasks(sortTasks(getFilteredTasks()));
+}
+
+async function loadTasks() {
+  const r = await fetch("/api/tasks");
+  allTasks = await r.json();
+  updateStats(allTasks);
+  updateNextBestAction(allTasks);
+  renderProjects(allTasks);
+  applyFilters();
+}
+
+async function loadAgents() {
+  const r = await fetch("/api/agents");
+  allAgents = await r.json();
+  renderAgents(allAgents);
+  fillRunAgentSelect();
+}
+
+async function loadRuns() {
+  const r = await fetch("/api/runs");
+  allRuns = await r.json();
+  updateRunStats(allRuns);
+  renderRuns(allRuns);
+}
+
+async function loadActivity() {
+  const r = await fetch("/api/activity?limit=15");
+  renderActivity(await r.json());
+}
+
+async function refreshDashboard() {
+  await Promise.all([loadTasks(), loadAgents(), loadRuns(), loadActivity()]);
+}
+
+async function createTask() {
+  const title = document.getElementById("task-title").value;
+  const priority = document.getElementById("task-priority").value;
+  const project = document.getElementById("task-project").value;
+
+  if (!title.trim()) return alert("Inserisci un titolo");
+
+  const r = await fetch("/api/tasks", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({title, priority, project})
+  });
+
+  if (!r.ok) return alert("Errore nella creazione del task");
+
+  document.getElementById("task-title").value = "";
+  await refreshDashboard();
+}
+
+async function completeTask(id) {
+  const r = await fetch("/api/tasks/" + id, {
+    method: "PATCH",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({status:"done"})
+  });
+
+  if (!r.ok) return alert("Errore nell'aggiornamento del task");
+  await refreshDashboard();
+}
+
+async function deleteTask(id) {
+  const r = await fetch("/api/tasks/" + id, {method:"DELETE"});
+  if (!r.ok) return alert("Errore nell'eliminazione del task");
+  await refreshDashboard();
+}
+
+async function createAgent() {
+  const name = document.getElementById("agent-name").value;
+  const role = document.getElementById("agent-role").value;
+  const project = document.getElementById("agent-project").value;
+
+  if (!name.trim() || !role.trim()) return alert("Inserisci nome e ruolo dell'agente");
+
+  const r = await fetch("/api/agents", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,role,project})
+  });
+
+  if (!r.ok) return alert("Errore nella creazione dell'agente");
+
+  document.getElementById("agent-name").value = "";
+  document.getElementById("agent-role").value = "";
+  await loadAgents();
+}
+
+async function setAgentStatus(id,status) {
+  const r = await fetch("/api/agents/" + id + "/status", {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({status})
+  });
+
+  if (!r.ok) return alert("Errore nell'aggiornamento dell'agente");
+  await loadAgents();
+}
+
+async function startRun() {
+  if (!allAgents.length) return alert("Crea prima un agente");
+
+  const agentId = Number(document.getElementById("run-agent").value);
+  const task = document.getElementById("run-task").value;
+
+  if (!task.trim()) return alert("Inserisci il task del run");
+
+  const r = await fetch("/api/runs", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({agent_id:agentId,task})
+  });
+
+  if (!r.ok) return alert("Errore nell'avvio del run");
+
+  document.getElementById("run-task").value = "";
+  await Promise.all([loadRuns(),loadAgents()]);
+}
+
+async function executeRun(id) {
+  const r = await fetch("/api/runs/" + id + "/execute", {
+    method:"POST"
+  });
+
+  if (!r.ok) return alert("Errore nell'esecuzione locale dell'agente");
+
+  await Promise.all([loadRuns(), loadAgents()]);
+}
+
+async function finishRun(id,status) {
+  const output = prompt("Output del run:","Run completato.");
+  if (output === null) return;
+
+  const tokensIn = Number(prompt("Token input:", "0") || 0);
+  const tokensOut = Number(prompt("Token output:", "0") || 0);
+  const costUsd = Number(prompt("Costo USD:", "0") || 0);
+
+  const r = await fetch("/api/runs/" + id + "/finish", {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      status,
+      output,
+      tokens_in:tokensIn,
+      tokens_out:tokensOut,
+      cost_usd:costUsd
+    })
+  });
+
+  if (!r.ok) return alert("Errore nella chiusura del run");
+
+  await Promise.all([loadRuns(),loadAgents()]);
+}
+
+document.getElementById("create-task-button").onclick = createTask;
+document.getElementById("create-agent-button").onclick = createAgent;
+document.getElementById("start-run-button").onclick = startRun;
+document.getElementById("filter-status").onchange = applyFilters;
+document.getElementById("filter-priority").onchange = applyFilters;
+document.getElementById("filter-project").oninput = applyFilters;
+document.getElementById("sort-tasks").onchange = applyFilters;
+document.getElementById("clear-project-filter").onclick = () => {
+  document.getElementById("filter-project").value = "";
+  applyFilters();
+};
+
+refreshDashboard(); + Number(r.cost_usd || 0).toFixed(4) +
+      (r.duration_seconds != null ? ' · Duration: ' + r.duration_seconds + 's' : '') +
+      (r.model ? ' · Model: ' + r.model : '') +
+      '</div>';
+
+    if (r.context_sources) {
+      let sources = [];
+      try {
+        sources = JSON.parse(r.context_sources);
+      } catch (error) {
+        sources = [r.context_sources];
+      }
+
+      html +=
+        '<div class="run-metrics">Context: ' +
+        sources.join(' · ') +
+        '</div>';
+    }
 
     if (r.output) {
       html += '<div class="run-output">' + r.output + '</div>';
