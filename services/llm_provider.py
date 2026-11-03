@@ -107,7 +107,9 @@ def run_llm(agent, task, context_package):
         for call in function_calls:
             result = execute_tool_json(
                 call.name,
-                call.arguments
+                call.arguments,
+                agent_name=agent["name"],
+                run_id=context_package.get("run_id")
             )
 
             tools_used.append(
