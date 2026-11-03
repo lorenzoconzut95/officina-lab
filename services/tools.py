@@ -102,8 +102,8 @@ TOOL_DEFINITIONS = [
                 "limit": {
                     "type": "integer",
                     "minimum": 1,
-                    "maximum": 20,
-                    "description": "Maximum recent runs/tool calls to include."
+                    "maximum": 8,
+                    "description": "Maximum recent runs/tool calls to include. Prefer 4-6."
                 }
             },
             "required": ["project"],
@@ -234,7 +234,10 @@ def execute_tool(
 
     elif name == "inspect_project_state":
         project = arguments["project"]
-        limit = arguments.get("limit", 8)
+        limit = min(
+            arguments.get("limit", 5),
+            8
+        )
 
         project_tasks = [
             task for task in list_tasks()
@@ -254,6 +257,12 @@ def execute_tool(
         result = {
             "tool": "inspect_project_state",
             "project": project,
+            "covers": [
+                "tasks",
+                "memories",
+                "recent_runs",
+                "recent_tool_calls"
+            ],
             "summary": {
                 "task_count": len(project_tasks),
                 "todo_count": len([
@@ -268,23 +277,42 @@ def execute_tool(
                 "recent_run_count": len(recent_runs),
                 "recent_tool_call_count": len(recent_tool_calls)
             },
-            "tasks": project_tasks,
-            "memories": project_memories,
+            "tasks": [
+                {
+                    "id": task["id"],
+                    "title": task["title"],
+                    "status": task["status"],
+                    "priority": task["priority"]
+                }
+                for task in project_tasks
+            ],
+            "memories": [
+                {
+                    "type": memory["memory_type"],
+                    "content": memory["content"]
+                }
+                for memory in project_memories
+            ],
             "recent_runs": [
                 {
                     "id": run["id"],
-                    "agent_name": run["agent_name"],
                     "task": run["task"],
                     "status": run["status"],
-                    "output": run["output"],
-                    "model": run["model"],
                     "context_sources": run["context_sources"],
-                    "started_at": run["started_at"],
-                    "ended_at": run["ended_at"]
+                    "output_preview": (
+                        (run["output"] or "")[:280]
+                    )
                 }
                 for run in recent_runs
             ],
-            "recent_tool_calls": recent_tool_calls
+            "recent_tool_calls": [
+                {
+                    "tool_name": item["tool_name"],
+                    "arguments": item["arguments"],
+                    "run_id": item["run_id"]
+                }
+                for item in recent_tool_calls
+            ]
         }
 
     elif name == "create_task":
