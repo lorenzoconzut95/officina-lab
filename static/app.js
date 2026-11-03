@@ -97,6 +97,7 @@ function renderAgents(agents) {
       '<br>' + a.project + '</div>' +
       '<span class="agent-status">' + a.status + '</span>' +
       '<div class="agent-actions">' +
+      '<button onclick="editAgent(' + a.id + ')">Edit Agent</button>' +
       '<button onclick="setAgentStatus(' + a.id + ',\'working\')">Working</button>' +
       '<button onclick="setAgentStatus(' + a.id + ',\'idle\')">Idle</button>' +
       '</div>';
@@ -495,6 +496,33 @@ async function createAgent() {
   document.getElementById("agent-name").value = "";
   document.getElementById("agent-role").value = "";
   document.getElementById("agent-goal").value = "";
+  await loadAgents();
+}
+
+async function editAgent(id) {
+  const agent = allAgents.find(a => a.id === id);
+  if (!agent) return;
+
+  const name = prompt("Agent name:", agent.name);
+  if (name === null) return;
+
+  const role = prompt("Role:", agent.role);
+  if (role === null) return;
+
+  const goal = prompt("Goal:", agent.goal || "");
+  if (goal === null) return;
+
+  const project = prompt("Project:", agent.project);
+  if (project === null) return;
+
+  const r = await fetch("/api/agents/" + id, {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,role,goal,project})
+  });
+
+  if (!r.ok) return alert("Errore nell'aggiornamento dell'agente");
+
   await loadAgents();
 }
 
