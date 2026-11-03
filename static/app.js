@@ -1,20 +1,361 @@
-let allTasks=[];let allAgents=[];const priorityWeight={high:3,medium:2,low:1};
-function updateStats(tasks){const total=tasks.length;const done=tasks.filter(t=>t.status==="done").length;document.getElementById("todo-count").textContent=total-done;document.getElementById("done-count").textContent=done;document.getElementById("total-count").textContent=total}
-function updateNextBestAction(tasks){const todo=[...tasks].filter(t=>t.status!=="done").sort((a,b)=>priorityWeight[b.priority]-priorityWeight[a.priority]||new Date(a.created_at)-new Date(b.created_at));const title=document.getElementById("next-action-title");const meta=document.getElementById("next-action-meta");if(!todo.length){title.textContent="Nessun task attivo";meta.textContent="Crea un nuovo task per continuare.";return}title.textContent=todo[0].title;meta.textContent=`${todo[0].project} · ${todo[0].priority} priority`}
-function renderProjects(tasks){const c=document.getElementById("projects");const p={};tasks.forEach(t=>{p[t.project]??={total:0,done:0};p[t.project].total++;if(t.status==="done")p[t.project].done++});c.innerHTML="";Object.keys(p).sort().forEach(name=>{const s=p[name];const progress=Math.round(s.done/s.total*100);const card=document.createElement("div");card.className="project-card";card.innerHTML=`<div class="project-title">${name}</div><div class="project-meta">${s.done}/${s.total} done · ${progress}%</div><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>`;card.onclick=()=>{document.getElementById("filter-project").value=name;applyFilters()};c.appendChild(card)})}
-function renderAgents(agents){const c=document.getElementById("agents");document.getElementById("agent-count").textContent=`${agents.length} agents`;c.innerHTML="";if(!agents.length){c.innerHTML="<p>Nessun agente creato.</p>";return}agents.forEach(a=>{const card=document.createElement("div");card.className="agent-card";card.innerHTML=`<div class="agent-name">${a.name}</div><div class="agent-meta">${a.role}<br>${a.project}</div><span class="agent-status">${a.status}</span><div class="agent-actions"><button onclick="setAgentStatus(${a.id},'working')">Working</button><button onclick="setAgentStatus(${a.id},'idle')">Idle</button></div>`;c.appendChild(card)})}
-function getFilteredTasks(){const status=document.getElementById("filter-status").value;const priority=document.getElementById("filter-priority").value;const project=document.getElementById("filter-project").value.trim().toLowerCase();return allTasks.filter(t=>(status==="all"||t.status===status)&&(priority==="all"||t.priority===priority)&&(!project||t.project.toLowerCase().includes(project)))}
-function sortTasks(tasks){const mode=document.getElementById("sort-tasks").value;const s=[...tasks];if(mode==="priority")s.sort((a,b)=>(a.status==="done")-(b.status==="done")||priorityWeight[b.priority]-priorityWeight[a.priority]);if(mode==="newest")s.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));if(mode==="oldest")s.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));if(mode==="project")s.sort((a,b)=>a.project.localeCompare(b.project));return s}
-function renderTasks(tasks){const c=document.getElementById("tasks");c.innerHTML="";if(!tasks.length){c.innerHTML="<p>Nessun task corrisponde ai filtri.</p>";return}tasks.forEach(t=>{const d=document.createElement("div");d.className=`task priority-${t.priority} ${t.status==="done"?"done":""}`;d.innerHTML=`<div class="task-title">${t.title}</div><div class="task-meta">Project: ${t.project}<br>Priority: <span class="priority-label">${t.priority}</span><br>Status: ${t.status}<br>Created: ${t.created_at}</div><div class="task-actions"><button onclick="completeTask(${t.id})">Done</button><button onclick="deleteTask(${t.id})">Delete</button></div>`;c.appendChild(d)})}
-function renderActivity(items){const c=document.getElementById("activity-log");c.innerHTML="";if(!items.length){c.innerHTML="<p>Nessuna attività registrata.</p>";return}items.forEach(i=>{const d=document.createElement("div");d.className="activity-item";d.innerHTML=`<span class="activity-action ${i.action}">${i.action}</span><span class="activity-main">${i.task_title} · ${i.project}</span><span class="activity-time">${i.created_at}</span>`;c.appendChild(d)})}
-function applyFilters(){renderTasks(sortTasks(getFilteredTasks()))}
-async function loadTasks(){const r=await fetch("/api/tasks");allTasks=await r.json();updateStats(allTasks);updateNextBestAction(allTasks);renderProjects(allTasks);applyFilters()}
-async function loadAgents(){const r=await fetch("/api/agents");allAgents=await r.json();renderAgents(allAgents)}
-async function loadActivity(){const r=await fetch("/api/activity?limit=15");renderActivity(await r.json())}
-async function refreshDashboard(){await Promise.all([loadTasks(),loadAgents(),loadActivity()])}
-async function createTask(){const title=document.getElementById("task-title").value;const priority=document.getElementById("task-priority").value;const project=document.getElementById("task-project").value;if(!title.trim())return alert("Inserisci un titolo");const r=await fetch("/api/tasks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,priority,project})});if(!r.ok)return alert("Errore nella creazione del task");document.getElementById("task-title").value="";await refreshDashboard()}
-async function completeTask(id){const r=await fetch(`/api/tasks/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"done"})});if(!r.ok)return alert("Errore nell'aggiornamento del task");await refreshDashboard()}
-async function deleteTask(id){const r=await fetch(`/api/tasks/${id}`,{method:"DELETE"});if(!r.ok)return alert("Errore nell'eliminazione del task");await refreshDashboard()}
-async function createAgent(){const name=document.getElementById("agent-name").value;const role=document.getElementById("agent-role").value;const project=document.getElementById("agent-project").value;if(!name.trim()||!role.trim())return alert("Inserisci nome e ruolo dell'agente");const r=await fetch("/api/agents",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,role,project})});if(!r.ok)return alert("Errore nella creazione dell'agente");document.getElementById("agent-name").value="";document.getElementById("agent-role").value="";await loadAgents()}
-async function setAgentStatus(id,status){const r=await fetch(`/api/agents/${id}/status`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status})});if(!r.ok)return alert("Errore nell'aggiornamento dell'agente");await loadAgents()}
-document.getElementById("create-task-button").onclick=createTask;document.getElementById("create-agent-button").onclick=createAgent;document.getElementById("filter-status").onchange=applyFilters;document.getElementById("filter-priority").onchange=applyFilters;document.getElementById("filter-project").oninput=applyFilters;document.getElementById("sort-tasks").onchange=applyFilters;document.getElementById("clear-project-filter").onclick=()=>{document.getElementById("filter-project").value="";applyFilters()};refreshDashboard();
+let allTasks = [];
+let allAgents = [];
+let allRuns = [];
+
+const priorityWeight = { high: 3, medium: 2, low: 1 };
+
+function updateStats(tasks) {
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === "done").length;
+  document.getElementById("todo-count").textContent = total - done;
+  document.getElementById("done-count").textContent = done;
+  document.getElementById("total-count").textContent = total;
+}
+
+function updateNextBestAction(tasks) {
+  const todo = [...tasks]
+    .filter(t => t.status !== "done")
+    .sort((a,b) => priorityWeight[b.priority] - priorityWeight[a.priority] || new Date(a.created_at) - new Date(b.created_at));
+
+  const title = document.getElementById("next-action-title");
+  const meta = document.getElementById("next-action-meta");
+
+  if (!todo.length) {
+    title.textContent = "Nessun task attivo";
+    meta.textContent = "Crea un nuovo task per continuare.";
+    return;
+  }
+
+  title.textContent = todo[0].title;
+  meta.textContent = todo[0].project + " · " + todo[0].priority + " priority";
+}
+
+function renderProjects(tasks) {
+  const c = document.getElementById("projects");
+  const p = {};
+
+  tasks.forEach(t => {
+    if (!p[t.project]) p[t.project] = { total: 0, done: 0 };
+    p[t.project].total += 1;
+    if (t.status === "done") p[t.project].done += 1;
+  });
+
+  c.innerHTML = "";
+
+  Object.keys(p).sort().forEach(name => {
+    const s = p[name];
+    const progress = Math.round((s.done / s.total) * 100);
+    const card = document.createElement("div");
+    card.className = "project-card";
+    card.innerHTML =
+      '<div class="project-title">' + name + '</div>' +
+      '<div class="project-meta">' + s.done + '/' + s.total + ' done · ' + progress + '%</div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + progress + '%"></div></div>';
+
+    card.onclick = () => {
+      document.getElementById("filter-project").value = name;
+      applyFilters();
+    };
+
+    c.appendChild(card);
+  });
+}
+
+function renderAgents(agents) {
+  const c = document.getElementById("agents");
+  document.getElementById("agent-count").textContent = agents.length + " agents";
+  c.innerHTML = "";
+
+  if (!agents.length) {
+    c.innerHTML = "<p>Nessun agente creato.</p>";
+    return;
+  }
+
+  agents.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "agent-card";
+    card.innerHTML =
+      '<div class="agent-name">' + a.name + '</div>' +
+      '<div class="agent-meta">' + a.role + '<br>' + a.project + '</div>' +
+      '<span class="agent-status">' + a.status + '</span>' +
+      '<div class="agent-actions">' +
+      '<button onclick="setAgentStatus(' + a.id + ',\'working\')">Working</button>' +
+      '<button onclick="setAgentStatus(' + a.id + ',\'idle\')">Idle</button>' +
+      '</div>';
+    c.appendChild(card);
+  });
+}
+
+function fillRunAgentSelect() {
+  const select = document.getElementById("run-agent");
+  select.innerHTML = "";
+
+  allAgents.forEach(a => {
+    const option = document.createElement("option");
+    option.value = a.id;
+    option.textContent = a.name + " · " + a.role;
+    select.appendChild(option);
+  });
+}
+
+function renderRuns(runs) {
+  const c = document.getElementById("runs");
+  document.getElementById("run-count").textContent = runs.length + " runs";
+  c.innerHTML = "";
+
+  if (!runs.length) {
+    c.innerHTML = "<p>Nessuna esecuzione registrata.</p>";
+    return;
+  }
+
+  runs.forEach(r => {
+    const card = document.createElement("div");
+    card.className = "run-card";
+
+    let html =
+      '<div class="run-title">' + r.agent_name + '</div>' +
+      '<div class="run-meta">' + r.task + '<br>Started: ' + r.started_at;
+
+    if (r.ended_at) html += '<br>Ended: ' + r.ended_at;
+
+    html += '</div><span class="run-status ' + r.status + '">' + r.status + '</span>';
+
+    if (r.output) {
+      html += '<div class="run-output">' + r.output + '</div>';
+    }
+
+    if (r.status === "running") {
+      html +=
+        '<div class="run-actions">' +
+        '<button onclick="finishRun(' + r.id + ',\'completed\')">Complete</button>' +
+        '<button onclick="finishRun(' + r.id + ',\'failed\')">Fail</button>' +
+        '</div>';
+    }
+
+    card.innerHTML = html;
+    c.appendChild(card);
+  });
+}
+
+function getFilteredTasks() {
+  const status = document.getElementById("filter-status").value;
+  const priority = document.getElementById("filter-priority").value;
+  const project = document.getElementById("filter-project").value.trim().toLowerCase();
+
+  return allTasks.filter(t =>
+    (status === "all" || t.status === status) &&
+    (priority === "all" || t.priority === priority) &&
+    (!project || t.project.toLowerCase().includes(project))
+  );
+}
+
+function sortTasks(tasks) {
+  const mode = document.getElementById("sort-tasks").value;
+  const s = [...tasks];
+
+  if (mode === "priority") {
+    s.sort((a,b) => (a.status === "done") - (b.status === "done") || priorityWeight[b.priority] - priorityWeight[a.priority]);
+  }
+  if (mode === "newest") s.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  if (mode === "oldest") s.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+  if (mode === "project") s.sort((a,b) => a.project.localeCompare(b.project));
+
+  return s;
+}
+
+function renderTasks(tasks) {
+  const c = document.getElementById("tasks");
+  c.innerHTML = "";
+
+  if (!tasks.length) {
+    c.innerHTML = "<p>Nessun task corrisponde ai filtri.</p>";
+    return;
+  }
+
+  tasks.forEach(t => {
+    const d = document.createElement("div");
+    d.className = "task priority-" + t.priority + " " + (t.status === "done" ? "done" : "");
+    d.innerHTML =
+      '<div class="task-title">' + t.title + '</div>' +
+      '<div class="task-meta">Project: ' + t.project +
+      '<br>Priority: <span class="priority-label">' + t.priority + '</span>' +
+      '<br>Status: ' + t.status +
+      '<br>Created: ' + t.created_at + '</div>' +
+      '<div class="task-actions">' +
+      '<button onclick="completeTask(' + t.id + ')">Done</button>' +
+      '<button onclick="deleteTask(' + t.id + ')">Delete</button>' +
+      '</div>';
+    c.appendChild(d);
+  });
+}
+
+function renderActivity(items) {
+  const c = document.getElementById("activity-log");
+  c.innerHTML = "";
+
+  if (!items.length) {
+    c.innerHTML = "<p>Nessuna attività registrata.</p>";
+    return;
+  }
+
+  items.forEach(i => {
+    const d = document.createElement("div");
+    d.className = "activity-item";
+    d.innerHTML =
+      '<span class="activity-action ' + i.action + '">' + i.action + '</span>' +
+      '<span class="activity-main">' + i.task_title + ' · ' + i.project + '</span>' +
+      '<span class="activity-time">' + i.created_at + '</span>';
+    c.appendChild(d);
+  });
+}
+
+function applyFilters() {
+  renderTasks(sortTasks(getFilteredTasks()));
+}
+
+async function loadTasks() {
+  const r = await fetch("/api/tasks");
+  allTasks = await r.json();
+  updateStats(allTasks);
+  updateNextBestAction(allTasks);
+  renderProjects(allTasks);
+  applyFilters();
+}
+
+async function loadAgents() {
+  const r = await fetch("/api/agents");
+  allAgents = await r.json();
+  renderAgents(allAgents);
+  fillRunAgentSelect();
+}
+
+async function loadRuns() {
+  const r = await fetch("/api/runs");
+  allRuns = await r.json();
+  renderRuns(allRuns);
+}
+
+async function loadActivity() {
+  const r = await fetch("/api/activity?limit=15");
+  renderActivity(await r.json());
+}
+
+async function refreshDashboard() {
+  await Promise.all([loadTasks(), loadAgents(), loadRuns(), loadActivity()]);
+}
+
+async function createTask() {
+  const title = document.getElementById("task-title").value;
+  const priority = document.getElementById("task-priority").value;
+  const project = document.getElementById("task-project").value;
+
+  if (!title.trim()) return alert("Inserisci un titolo");
+
+  const r = await fetch("/api/tasks", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({title, priority, project})
+  });
+
+  if (!r.ok) return alert("Errore nella creazione del task");
+
+  document.getElementById("task-title").value = "";
+  await refreshDashboard();
+}
+
+async function completeTask(id) {
+  const r = await fetch("/api/tasks/" + id, {
+    method: "PATCH",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({status:"done"})
+  });
+
+  if (!r.ok) return alert("Errore nell'aggiornamento del task");
+  await refreshDashboard();
+}
+
+async function deleteTask(id) {
+  const r = await fetch("/api/tasks/" + id, {method:"DELETE"});
+  if (!r.ok) return alert("Errore nell'eliminazione del task");
+  await refreshDashboard();
+}
+
+async function createAgent() {
+  const name = document.getElementById("agent-name").value;
+  const role = document.getElementById("agent-role").value;
+  const project = document.getElementById("agent-project").value;
+
+  if (!name.trim() || !role.trim()) return alert("Inserisci nome e ruolo dell'agente");
+
+  const r = await fetch("/api/agents", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,role,project})
+  });
+
+  if (!r.ok) return alert("Errore nella creazione dell'agente");
+
+  document.getElementById("agent-name").value = "";
+  document.getElementById("agent-role").value = "";
+  await loadAgents();
+}
+
+async function setAgentStatus(id,status) {
+  const r = await fetch("/api/agents/" + id + "/status", {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({status})
+  });
+
+  if (!r.ok) return alert("Errore nell'aggiornamento dell'agente");
+  await loadAgents();
+}
+
+async function startRun() {
+  if (!allAgents.length) return alert("Crea prima un agente");
+
+  const agentId = Number(document.getElementById("run-agent").value);
+  const task = document.getElementById("run-task").value;
+
+  if (!task.trim()) return alert("Inserisci il task del run");
+
+  const r = await fetch("/api/runs", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({agent_id:agentId,task})
+  });
+
+  if (!r.ok) return alert("Errore nell'avvio del run");
+
+  document.getElementById("run-task").value = "";
+  await Promise.all([loadRuns(),loadAgents()]);
+}
+
+async function finishRun(id,status) {
+  const output = prompt("Output del run:","Run completato.");
+  if (output === null) return;
+
+  const r = await fetch("/api/runs/" + id + "/finish", {
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({status,output})
+  });
+
+  if (!r.ok) return alert("Errore nella chiusura del run");
+
+  await Promise.all([loadRuns(),loadAgents()]);
+}
+
+document.getElementById("create-task-button").onclick = createTask;
+document.getElementById("create-agent-button").onclick = createAgent;
+document.getElementById("start-run-button").onclick = startRun;
+document.getElementById("filter-status").onchange = applyFilters;
+document.getElementById("filter-priority").onchange = applyFilters;
+document.getElementById("filter-project").oninput = applyFilters;
+document.getElementById("sort-tasks").onchange = applyFilters;
+document.getElementById("clear-project-filter").onclick = () => {
+  document.getElementById("filter-project").value = "";
+  applyFilters();
+};
+
+refreshDashboard();
