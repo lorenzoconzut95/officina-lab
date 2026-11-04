@@ -8,6 +8,10 @@ from repositories.errors import list_errors
 from services.approvals import create_approval
 from services.tool_calls import log_tool_call
 from services.project_state import build_project_state
+from services.project_files import (
+    list_project_files,
+    read_project_file
+)
 
 
 TOOL_DEFINITIONS = [
@@ -130,6 +134,56 @@ TOOL_DEFINITIONS = [
                 }
             },
             "required": ["project"],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "list_project_files",
+        "description": (
+            "List readable source, test, documentation, and frontend files "
+            "inside the Officina Lab project. This is read-only and excludes "
+            "secrets, databases, virtual environments, and .git."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                }
+            },
+            "required": [],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "read_project_file",
+        "description": (
+            "Read one allowed text source/test/documentation file from "
+            "Officina Lab. Use this to verify whether a fix or regression "
+            "test is actually implemented. This is read-only and cannot "
+            "read secrets, databases, or files outside the project."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": (
+                        "Project-relative path, for example "
+                        "services/executor.py or tests/test_api_key_config.py."
+                    )
+                },
+                "max_chars": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 20000
+                }
+            },
+            "required": ["path"],
             "additionalProperties": False
         }
     },
@@ -291,6 +345,39 @@ def execute_tool(
                 project=project,
                 limit=limit
             )
+        }
+
+    elif name == "list_project_files":
+        limit = min(
+            arguments.get("limit", 100),
+            200
+        )
+
+        files = list_project_files(
+            limit=limit
+        )
+
+        result = {
+            "tool": "list_project_files",
+            "count": len(files),
+            "items": files
+        }
+
+    elif name == "read_project_file":
+        path = arguments["path"]
+        max_chars = min(
+            arguments.get("max_chars", 12000),
+            20000
+        )
+
+        file_result = read_project_file(
+            path=path,
+            max_chars=max_chars
+        )
+
+        result = {
+            "tool": "read_project_file",
+            **file_result
         }
 
     elif name == "create_task":
