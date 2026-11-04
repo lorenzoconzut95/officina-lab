@@ -117,6 +117,8 @@ def role_instructions(agent):
         return (
             "BUG HUNTER MODE: "
             "Prefer list_recent_errors when investigating failures. "
+            "When asked whether a fix or regression test is implemented, "
+            "use list_project_files and read_project_file to inspect evidence. "
             "Separate observed evidence from hypotheses. "
             "Do not claim a root cause unless evidence supports it. "
             "For each relevant failure, return: symptom, evidence, "
