@@ -264,6 +264,14 @@ function renderIncidents(items) {
 
     actions.appendChild(button);
 
+    const caseStudyButton = document.createElement("button");
+    caseStudyButton.type = "button";
+    caseStudyButton.textContent = "Generate Case Study";
+    caseStudyButton.addEventListener("click", () => {
+      generateIncidentCaseStudy(item.id, card);
+    });
+    actions.appendChild(caseStudyButton);
+
     const reportButton = document.createElement("button");
     reportButton.type = "button";
     reportButton.textContent = "View Incident Report";
@@ -762,6 +770,54 @@ async function executeRun(id) {
     loadIncidents(),
     loadErrors()
   ]);
+}
+
+async function generateIncidentCaseStudy(incidentId, card) {
+  const existing = card.querySelector(".incident-case-study");
+
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/case-study"
+  );
+
+  if (!r.ok) {
+    return alert("Errore nella generazione del case study");
+  }
+
+  const result = await r.json();
+
+  const box = document.createElement("div");
+  box.className = "incident-case-study";
+
+  const title = document.createElement("div");
+  title.className = "incident-case-study-title";
+  title.textContent = result.filename;
+
+  const pre = document.createElement("pre");
+  pre.textContent = result.markdown;
+
+  const copyButton = document.createElement("button");
+  copyButton.type = "button";
+  copyButton.textContent = "Copy Markdown";
+  copyButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(
+        result.markdown
+      );
+      copyButton.textContent = "Copied";
+    } catch (error) {
+      alert("Copia automatica non disponibile");
+    }
+  });
+
+  box.appendChild(title);
+  box.appendChild(copyButton);
+  box.appendChild(pre);
+  card.appendChild(box);
 }
 
 async function viewIncidentReport(incidentId, card) {
