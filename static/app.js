@@ -692,6 +692,25 @@ function selectRun(runId) {
   renderRuns(allRuns);
 }
 
+function splitRunTask(task) {
+  const text = task || "";
+  const marker = "CURRENT PROJECT STATE SNAPSHOT:";
+
+  if (!text.includes(marker)) {
+    return {
+      summary: text,
+      technical: ""
+    };
+  }
+
+  const parts = text.split(marker);
+
+  return {
+    summary: parts[0].trim(),
+    technical: marker + parts.slice(1).join(marker)
+  };
+}
+
 function renderRunDetail(run) {
   const detail = document.getElementById("run-detail");
   if (!detail) return;
@@ -731,6 +750,8 @@ function renderRunDetail(run) {
     }
   }
 
+  const taskParts = splitRunTask(run.task);
+
   detail.innerHTML =
     '<div class="run-detail-header">' +
       '<div>' +
@@ -747,14 +768,23 @@ function renderRunDetail(run) {
     '</div>' +
     '<div class="run-detail-block">' +
       '<span class="run-detail-label">Task</span>' +
-      '<div class="run-detail-text">' + (run.task || "—") + '</div>' +
+      '<div class="run-detail-text">' + (taskParts.summary || "—") + '</div>' +
     '</div>' +
-    '<div class="run-detail-block">' +
+    (taskParts.technical
+      ? '<details class="run-technical-context">' +
+          '<summary>Technical context</summary>' +
+          '<pre>' + taskParts.technical + '</pre>' +
+        '</details>'
+      : '') +
+    '<div class="run-detail-block run-output-block">' +
       '<span class="run-detail-label">Output</span>' +
       '<pre class="run-detail-output">' + (run.output || "No output yet.") + '</pre>' +
     '</div>' +
     (context
-      ? '<div class="run-detail-block"><span class="run-detail-label">Context</span><div class="run-detail-text">' + context + '</div></div>'
+      ? '<details class="run-technical-context">' +
+          '<summary>Context sources</summary>' +
+          '<div class="run-detail-text">' + context + '</div>' +
+        '</details>'
       : '') +
     '<div class="run-detail-actions">' + actions + '</div>';
 }
