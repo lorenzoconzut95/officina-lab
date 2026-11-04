@@ -11,6 +11,7 @@ from routes.memories import router as memories_router
 from routes.approvals import router as approvals_router
 from routes.tool_calls import router as tool_calls_router
 from routes.errors import router as errors_router
+from routes.incidents import router as incidents_router
 
 
 app = FastAPI(
@@ -49,6 +50,7 @@ app.include_router(memories_router)
 app.include_router(approvals_router)
 app.include_router(tool_calls_router)
 app.include_router(errors_router)
+app.include_router(incidents_router)
 
 
 init_db()
