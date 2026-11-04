@@ -236,91 +236,74 @@ function renderIncidents(items) {
   c.innerHTML = "";
 
   if (!visibleItems.length) {
-    c.innerHTML = "<p>Nessun incidente raggruppato.</p>";
+    c.innerHTML = "<p>Nessun incidente in questa vista.</p>";
     return;
   }
 
   visibleItems.forEach(item => {
-    const card = document.createElement("div");
+    const card = document.createElement("article");
     card.className =
       "incident-card severity-" + item.severity +
       " status-" + item.status;
 
-    card.innerHTML =
-      '<div class="incident-title">' + item.incident_key + '</div>' +
-      '<div class="incident-meta">' +
-      'Status: ' + item.status +
-      ' · Severity: ' + item.severity +
-      ' · Occurrences: ' + item.occurrences +
-      '<br>Latest run: #' + item.latest_run_id +
-      ' · Agent: ' + item.latest_agent_name +
-      '<br>' + item.latest_created_at +
-      '</div>' +
-      '<div class="incident-message">' +
-      item.latest_error_message +
-      '</div>';
-
-    if (item.analysis_run_id) {
-      const analysisRun = allRuns.find(
-        run => run.id === item.analysis_run_id
-      );
-
-      const analysisBox = document.createElement("div");
-      analysisBox.className = "incident-analysis";
-
-      if (analysisRun) {
-        const outputPreview = analysisRun.output
-          ? analysisRun.output.slice(0, 500)
-          : "Nessun output ancora.";
-
-        analysisBox.textContent =
-          "Analysis run #" + analysisRun.id +
-          " · " + analysisRun.status +
-          "\n" + outputPreview;
-      } else {
-        analysisBox.textContent =
-          "Analysis run #" + item.analysis_run_id;
-      }
-
-      card.appendChild(analysisBox);
-    }
-
-    const actions = document.createElement("div");
-    actions.className = "run-actions";
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Analyze with Bug Hunter";
-    button.addEventListener("click", () => {
-      analyzeIncidentWithBugHunter(item.id);
-    });
-
-    actions.appendChild(button);
-
-    const caseStudyButton = document.createElement("button");
-    caseStudyButton.type = "button";
-    caseStudyButton.textContent = "Generate Case Study";
-    caseStudyButton.addEventListener("click", () => {
-      generateIncidentCaseStudy(item.id, card);
-    });
-    actions.appendChild(caseStudyButton);
-
-    const reportButton = document.createElement("button");
-    reportButton.type = "button";
-    reportButton.textContent = "View Incident Report";
-    reportButton.addEventListener("click", () => {
-      viewIncidentReport(item.id, card);
-    });
-    actions.appendChild(reportButton);
-
-    const linkedAnalysis = item.analysis_run_id
+    const analysisRun = item.analysis_run_id
       ? allRuns.find(run => run.id === item.analysis_run_id)
       : null;
 
-    if (
-      linkedAnalysis &&
-      linkedAnalysis.status === "completed"
-    ) {
+    const builderRun = item.builder_run_id
+      ? allRuns.find(run => run.id === item.builder_run_id)
+      : null;
+
+    const messagePreview = (item.latest_error_message || "")
+      .replace(/\s+/g, " ")
+      .slice(0, 160);
+
+    const top = document.createElement("div");
+    top.className = "incident-card-top";
+    top.innerHTML =
+      '<div>' +
+      '<div class="incident-title">' + item.incident_key + '</div>' +
+      '<div class="incident-meta">Run #' + item.latest_run_id +
+      ' · ' + item.latest_agent_name +
+      ' · ' + item.occurrences + ' occurrence' +
+      (item.occurrences === 1 ? '' : 's') +
+      '</div>' +
+      '</div>' +
+      '<div class="incident-badges">' +
+      '<span class="incident-badge status-' + item.status + '">' + item.status + '</span>' +
+      '<span class="incident-badge severity-' + item.severity + '">' + item.severity + '</span>' +
+      '</div>';
+
+    card.appendChild(top);
+
+    const preview = document.createElement("div");
+    preview.className = "incident-preview";
+    preview.textContent = messagePreview || "Nessun messaggio errore.";
+    card.appendChild(preview);
+
+    const pipeline = document.createElement("div");
+    pipeline.className = "incident-pipeline";
+    pipeline.innerHTML =
+      '<span>Bug Hunter: ' +
+      (analysisRun ? analysisRun.status : 'not started') +
+      '</span>' +
+      '<span>Builder: ' +
+      (builderRun ? builderRun.status : 'not started') +
+      '</span>';
+    card.appendChild(pipeline);
+
+    const actions = document.createElement("div");
+    actions.className = "incident-primary-actions";
+
+    const analyzeButton = document.createElement("button");
+    analyzeButton.type = "button";
+    analyzeButton.textContent = analysisRun ? "Re-analyze" : "Analyze";
+    analyzeButton.addEventListener("click", () => {
+      analyzeIncidentWithBugHunter(item.id);
+    });
+    actions.appendChild(analyzeButton);
+
+    if (analysisRun && analysisRun.status === "completed") {
       const handoffButton = document.createElement("button");
       handoffButton.type = "button";
       handoffButton.textContent = "Handoff to Builder";
@@ -330,15 +313,13 @@ function renderIncidents(items) {
       actions.appendChild(handoffButton);
     }
 
-    if (item.status !== "investigating") {
-      const investigatingButton = document.createElement("button");
-      investigatingButton.type = "button";
-      investigatingButton.textContent = "Investigating";
-      investigatingButton.addEventListener("click", () => {
-        setIncidentStatus(item.id, "investigating");
-      });
-      actions.appendChild(investigatingButton);
-    }
+    const reportButton = document.createElement("button");
+    reportButton.type = "button";
+    reportButton.textContent = "Incident Report";
+    reportButton.addEventListener("click", () => {
+      viewIncidentReport(item.id, card);
+    });
+    actions.appendChild(reportButton);
 
     if (item.status !== "resolved") {
       const resolveButton = document.createElement("button");
@@ -351,6 +332,41 @@ function renderIncidents(items) {
     }
 
     card.appendChild(actions);
+
+    const details = document.createElement("details");
+    details.className = "incident-details";
+    details.innerHTML =
+      '<summary>More details</summary>' +
+      '<div class="incident-details-body">' +
+      '<div><strong>Latest task</strong><br>' + item.latest_task + '</div>' +
+      '<div><strong>Latest error</strong><br>' + item.latest_error_message + '</div>' +
+      '<div><strong>Updated</strong><br>' + item.updated_at + '</div>' +
+      '</div>';
+
+    const secondary = document.createElement("div");
+    secondary.className = "incident-secondary-actions";
+
+    if (item.status !== "investigating") {
+      const investigatingButton = document.createElement("button");
+      investigatingButton.type = "button";
+      investigatingButton.textContent = "Mark investigating";
+      investigatingButton.addEventListener("click", () => {
+        setIncidentStatus(item.id, "investigating");
+      });
+      secondary.appendChild(investigatingButton);
+    }
+
+    const caseStudyButton = document.createElement("button");
+    caseStudyButton.type = "button";
+    caseStudyButton.textContent = "Generate Case Study";
+    caseStudyButton.addEventListener("click", () => {
+      generateIncidentCaseStudy(item.id, card);
+    });
+    secondary.appendChild(caseStudyButton);
+
+    details.appendChild(secondary);
+    card.appendChild(details);
+
     c.appendChild(card);
   });
 }
