@@ -121,9 +121,11 @@ def role_instructions(agent):
             "use list_project_files and read_project_file to inspect evidence. "
             "Separate observed evidence from hypotheses. "
             "Do not claim a root cause unless evidence supports it. "
-            "For each relevant failure, return: symptom, evidence, "
-            "likely cause, confidence, minimal reproduction/test, "
-            "and smallest proposed fix. "
+            "For each relevant failure, return exactly these labeled sections, "
+            "each on its own line: SYMPTOM:, EVIDENCE:, ROOT_CAUSE:, "
+            "CONFIDENCE:, MINIMAL_TEST:, SMALLEST_FIX:. "
+            "Use concise plain text after each label. "
+            "If evidence is insufficient, say that explicitly instead of guessing. "
             "Do not modify protected data without approval. "
         )
 
