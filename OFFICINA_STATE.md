@@ -177,3 +177,18 @@ Next verification:
 3. Launch Bug Hunter with:
    "Verifica se il controllo dei placeholder OPENAI_API_KEY è già implementato e coperto da test automatici. Usa list_project_files e read_project_file per ispezionare il codice e i test. Distingui chiaramente: errori storici, implementazione presente, test presenti, verifica end-to-end ancora mancante. Non modificare nulla senza approval."
 4. Confirm it cites evidence from services/llm_provider.py and tests/test_api_key_config.py.
+
+
+## Verified 2026-11-04 — API key placeholder incident
+
+Bug Hunter verified the historical invalid API key failures against current source and tests.
+
+Verified:
+- Placeholder detection exists in services/llm_provider.py.
+- Executor blocks placeholder keys before run_llm().
+- Unit tests cover missing, placeholder and realistic-looking keys.
+- Executor regression test verifies run_llm() is not called for placeholder configuration.
+- Integration-style test sets OPENAI_API_KEY=" LA_TUA_CHIAVE " in an isolated environment and verifies the executor fails early.
+- Current test suite passed locally on 2026-11-04.
+
+This closes the gap identified by Bug Hunter between historical error evidence, implementation evidence and regression-test evidence.
