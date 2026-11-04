@@ -8,6 +8,7 @@ from repositories.incidents import (
     link_analysis_run as repo_link_analysis_run
 )
 from services.errors import list_incidents as derive_incidents
+from repositories.runs import get_run as repo_get_run
 
 
 ALLOWED_STATUSES = {
@@ -94,3 +95,53 @@ def link_analysis_run(incident_id, run_id):
         incident_id,
         run_id
     )
+
+
+
+def get_incident_report(incident_id):
+    incident = get_incident(
+        incident_id
+    )
+
+    if incident is None:
+        return None
+
+    analysis_run = None
+
+    if incident["analysis_run_id"]:
+        analysis_run = repo_get_run(
+            incident["analysis_run_id"]
+        )
+
+    return {
+        "incident_id": incident["id"],
+        "incident_key": incident["incident_key"],
+        "status": incident["status"],
+        "severity": incident["severity"],
+        "occurrences": incident["occurrences"],
+        "latest_error": {
+            "run_id": incident["latest_run_id"],
+            "agent_name": incident["latest_agent_name"],
+            "task": incident["latest_task"],
+            "message": incident["latest_error_message"]
+        },
+        "analysis": (
+            {
+                "run_id": analysis_run["id"],
+                "status": analysis_run["status"],
+                "agent_name": analysis_run["agent_name"],
+                "model": analysis_run["model"],
+                "output": analysis_run["output"],
+                "started_at": analysis_run["started_at"],
+                "ended_at": analysis_run["ended_at"],
+                "tokens_in": analysis_run["tokens_in"],
+                "tokens_out": analysis_run["tokens_out"],
+                "cost_usd": analysis_run["cost_usd"]
+            }
+            if analysis_run
+            else None
+        ),
+        "created_at": incident["created_at"],
+        "updated_at": incident["updated_at"],
+        "resolved_at": incident["resolved_at"]
+    }
