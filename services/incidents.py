@@ -224,6 +224,64 @@ def parse_builder_proposal(output):
     return result
 
 
+VERIFICATION_LABELS = {
+    "VERDICT": "verdict",
+    "EVIDENCE": "evidence",
+    "TEST_PERFORMED": "test_performed",
+    "RESIDUAL_RISK": "residual_risk",
+    "NEXT_ACTION": "next_action"
+}
+
+
+def parse_verification_result(output):
+    result = {
+        "verdict": None,
+        "evidence": None,
+        "test_performed": None,
+        "residual_risk": None,
+        "next_action": None
+    }
+
+    if not output:
+        return result
+
+    current_key = None
+    buffer = []
+
+    def flush():
+        nonlocal buffer
+
+        if current_key is not None:
+            value = "\n".join(buffer).strip()
+            result[current_key] = value or None
+
+        buffer = []
+
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        matched = False
+
+        for label, key in VERIFICATION_LABELS.items():
+            prefix = label + ":"
+
+            if line.upper().startswith(prefix):
+                flush()
+                current_key = key
+                buffer = [line[len(prefix):].strip()]
+                matched = True
+                break
+
+        if not matched and current_key is not None:
+            buffer.append(raw_line)
+
+    flush()
+
+    if result["verdict"] is not None:
+        result["verdict"] = result["verdict"].strip().lower()
+
+    return result
+
+
 def get_incident_report(incident_id):
     incident = get_incident(
         incident_id
@@ -261,6 +319,10 @@ def get_incident_report(incident_id):
         builder_run["output"] if builder_run else None
     )
 
+    verification_result = parse_verification_result(
+        verification_run["output"] if verification_run else None
+    )
+
     return {
         "incident_id": incident["id"],
         "incident_key": incident["incident_key"],
@@ -275,6 +337,7 @@ def get_incident_report(incident_id):
         },
         "structured_analysis": structured_analysis,
         "builder_proposal": builder_proposal,
+        "verification_result": verification_result,
         "approval": approval,
         "verification_run": (
             {
@@ -587,9 +650,10 @@ def create_incident_verification_run(incident_id):
         "Inspect current Officina evidence and determine whether the approved "
         "proposal has actually been satisfied. Do not assume implementation. "
         "Use project files, recent errors, runs, and state when useful. "
-        "Return exactly: SYMPTOM:, EVIDENCE:, ROOT_CAUSE:, CONFIDENCE:, "
-        "MINIMAL_TEST:, SMALLEST_FIX:. In SMALLEST_FIX state either VERIFIED "
-        "if evidence supports closure, or the smallest remaining action."
+        "Return exactly these labeled sections: VERDICT:, EVIDENCE:, "
+        "TEST_PERFORMED:, RESIDUAL_RISK:, NEXT_ACTION:. "
+        "VERDICT must be exactly verified or not_verified. "
+        "Use verified only when current evidence supports closure."
     )
 
     run = create_run(
