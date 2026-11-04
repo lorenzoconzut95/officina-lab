@@ -16,7 +16,9 @@ def row_to_dict(row):
         "updated_at": row["updated_at"],
         "resolved_at": row["resolved_at"],
         "analysis_run_id": row["analysis_run_id"],
-        "builder_run_id": row["builder_run_id"]
+        "builder_run_id": row["builder_run_id"],
+        "approval_id": row["approval_id"],
+        "verification_run_id": row["verification_run_id"]
     }
 
 
@@ -233,4 +235,31 @@ def link_builder_run(incident_id, run_id):
     connection.commit()
     connection.close()
 
+    return get_incident(incident_id)
+
+
+
+def link_approval(incident_id, approval_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE incidents
+        SET approval_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (approval_id, incident_id))
+    connection.commit()
+    connection.close()
+    return get_incident(incident_id)
+
+
+def link_verification_run(incident_id, run_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE incidents
+        SET verification_run_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (run_id, incident_id))
+    connection.commit()
+    connection.close()
     return get_incident(incident_id)
