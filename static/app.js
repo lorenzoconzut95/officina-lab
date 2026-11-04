@@ -208,10 +208,11 @@ function renderIncidents(items) {
       "incident-card severity-" + item.severity;
 
     card.innerHTML =
-      '<div class="incident-title">' + item.key + '</div>' +
+      '<div class="incident-title">' + item.incident_key + '</div>' +
       '<div class="incident-meta">' +
-      'Severity: ' + item.severity +
-      ' · Occurrences: ' + item.count +
+      'Status: ' + item.status +
+      ' · Severity: ' + item.severity +
+      ' · Occurrences: ' + item.occurrences +
       '<br>Latest run: #' + item.latest_run_id +
       ' · Agent: ' + item.latest_agent_name +
       '<br>' + item.latest_created_at +
@@ -227,10 +228,31 @@ function renderIncidents(items) {
     button.type = "button";
     button.textContent = "Analyze with Bug Hunter";
     button.addEventListener("click", () => {
-      analyzeIncidentWithBugHunter(item.key);
+      analyzeIncidentWithBugHunter(item.id);
     });
 
     actions.appendChild(button);
+
+    if (item.status !== "investigating") {
+      const investigatingButton = document.createElement("button");
+      investigatingButton.type = "button";
+      investigatingButton.textContent = "Investigating";
+      investigatingButton.addEventListener("click", () => {
+        setIncidentStatus(item.id, "investigating");
+      });
+      actions.appendChild(investigatingButton);
+    }
+
+    if (item.status !== "resolved") {
+      const resolveButton = document.createElement("button");
+      resolveButton.type = "button";
+      resolveButton.textContent = "Resolve";
+      resolveButton.addEventListener("click", () => {
+        setIncidentStatus(item.id, "resolved");
+      });
+      actions.appendChild(resolveButton);
+    }
+
     card.appendChild(actions);
     c.appendChild(card);
   });
@@ -488,7 +510,7 @@ async function loadApprovals() {
 }
 
 async function loadIncidents() {
-  const r = await fetch("/api/errors/incidents?limit=50");
+  const r = await fetch("/api/incidents?limit=50");
   allIncidents = await r.json();
   renderIncidents(allIncidents);
 }
@@ -703,6 +725,19 @@ async function executeRun(id) {
   ]);
 }
 
+async function setIncidentStatus(incidentId, status) {
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/status?status=" + encodeURIComponent(status),
+    { method:"PATCH" }
+  );
+
+  if (!r.ok) {
+    return alert("Errore nell'aggiornamento dell'incidente");
+  }
+
+  await loadIncidents();
+}
+
 async function analyzeErrorWithBugHunter(errorItem) {
   const bugHunter = allAgents.find(agent =>
     agent.name.toLowerCase().replace(/\s+/g, " ").includes("bug hunter") ||
@@ -744,9 +779,9 @@ async function analyzeErrorWithBugHunter(errorItem) {
   ]);
 }
 
-async function analyzeIncidentWithBugHunter(incidentKey) {
+async function analyzeIncidentWithBugHunter(incidentId) {
   const incident = allIncidents.find(
-    item => item.key === incidentKey
+    item => item.id === incidentId
   );
 
   if (!incident) {
@@ -764,9 +799,10 @@ async function analyzeIncidentWithBugHunter(incidentKey) {
 
   const task =
     "Analizza questo incidente reale di Officina Lab.\n\n" +
-    "Incident key: " + incident.key + "\n" +
+    "Incident key: " + incident.incident_key + "\n" +
+    "Status: " + incident.status + "\n" +
     "Severity: " + incident.severity + "\n" +
-    "Occurrences: " + incident.count + "\n" +
+    "Occurrences: " + incident.occurrences + "\n" +
     "Latest run: #" + incident.latest_run_id + "\n" +
     "Latest agent: " + incident.latest_agent_name + "\n" +
     "Latest task: " + incident.latest_task + "\n" +
