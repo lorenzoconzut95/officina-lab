@@ -1180,6 +1180,13 @@ async function finishRun(id,status) {
   await Promise.all([loadRuns(),loadAgents()]);
 }
 
+document.querySelectorAll("[data-view-target]").forEach(button => {
+  button.addEventListener("click", () => {
+    const viewName = button.getAttribute("data-view-target");
+    switchDashboardView(viewName);
+  });
+});
+
 document.querySelectorAll("[data-incident-filter]").forEach(button => {
   button.addEventListener("click", () => {
     incidentFilter = button.dataset.incidentFilter;
