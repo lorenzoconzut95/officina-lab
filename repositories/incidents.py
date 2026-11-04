@@ -15,7 +15,8 @@ def row_to_dict(row):
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
         "resolved_at": row["resolved_at"],
-        "analysis_run_id": row["analysis_run_id"]
+        "analysis_run_id": row["analysis_run_id"],
+        "builder_run_id": row["builder_run_id"]
     }
 
 
@@ -200,6 +201,28 @@ def link_analysis_run(incident_id, run_id):
         UPDATE incidents
         SET
             analysis_run_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (
+        run_id,
+        incident_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+    return get_incident(incident_id)
+
+
+
+def link_builder_run(incident_id, run_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE incidents
+        SET
+            builder_run_id = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     """, (
