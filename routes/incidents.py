@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException
 
 from services.incidents import (
     list_incidents,
-    update_incident_status
+    update_incident_status,
+    link_analysis_run
 )
 
 
@@ -32,6 +33,26 @@ def change_incident_status(
             status_code=400,
             detail="Invalid incident status"
         )
+
+    if incident is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    return incident
+
+
+
+@router.patch("/{incident_id}/analysis-run")
+def attach_analysis_run(
+    incident_id: int,
+    run_id: int
+):
+    incident = link_analysis_run(
+        incident_id,
+        run_id
+    )
 
     if incident is None:
         raise HTTPException(
