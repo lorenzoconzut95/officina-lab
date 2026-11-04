@@ -398,9 +398,20 @@ def build_incident_case_study(incident_id):
 
     structured = report["structured_analysis"]
     analysis = report["analysis"]
+    builder = report["builder_run"]
+    proposal = report["builder_proposal"]
+    approval = report["approval"]
+    verification = report["verification_run"]
+    verification_result = report["verification_result"]
 
     def value(name):
         return structured.get(name) or "Not available"
+
+    def proposal_value(name):
+        return proposal.get(name) or "Not available"
+
+    def verification_value(name):
+        return verification_result.get(name) or "Not available"
 
     lines = [
         "# Incident Case Study — " + report["incident_key"],
@@ -459,6 +470,89 @@ def build_incident_case_study(incident_id):
 
     lines.extend([
         "",
+        "## Builder proposal",
+        "",
+        "**Action type:** " + proposal_value("action_type"),
+        "",
+        "**Target:** " + proposal_value("target"),
+        "",
+        "**Rationale:** " + proposal_value("rationale"),
+        "",
+        "**Change:** " + proposal_value("change"),
+        "",
+        "**Test:** " + proposal_value("test"),
+        "",
+        "**Risk:** " + proposal_value("risk"),
+        "",
+        "**Approval needed:** " + proposal_value("approval_needed"),
+        ""
+    ])
+
+    if builder:
+        lines.extend([
+            "Builder run #" + str(builder["run_id"])
+            + " · " + str(builder["status"]),
+            "",
+            builder["output"] or "No Builder output available.",
+            ""
+        ])
+    else:
+        lines.extend([
+            "No Builder run linked.",
+            ""
+        ])
+
+    lines.extend([
+        "## Approval",
+        ""
+    ])
+
+    if approval:
+        lines.extend([
+            "Approval #" + str(approval["id"])
+            + " · " + str(approval["status"]),
+            "",
+            "Resolved at: " + str(
+                approval["resolved_at"] or "not resolved"
+            ),
+            ""
+        ])
+    else:
+        lines.extend([
+            "No approval requested.",
+            ""
+        ])
+
+    lines.extend([
+        "## Verification",
+        "",
+        "**Verdict:** " + verification_value("verdict"),
+        "",
+        "**Evidence:** " + verification_value("evidence"),
+        "",
+        "**Test performed:** " + verification_value("test_performed"),
+        "",
+        "**Residual risk:** " + verification_value("residual_risk"),
+        "",
+        "**Next action:** " + verification_value("next_action"),
+        ""
+    ])
+
+    if verification:
+        lines.extend([
+            "Verification run #" + str(verification["run_id"])
+            + " · " + str(verification["status"]),
+            "",
+            verification["output"] or "No verification output available.",
+            ""
+        ])
+    else:
+        lines.extend([
+            "No verification run linked.",
+            ""
+        ])
+
+    lines.extend([
         "## Lifecycle",
         "",
         "Created: " + str(report["created_at"]),
@@ -477,7 +571,6 @@ def build_incident_case_study(incident_id):
         ),
         "markdown": "\n".join(lines)
     }
-
 
 
 def create_builder_handoff_for_incident(incident_id):
