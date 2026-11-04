@@ -438,10 +438,10 @@ function renderIncidents(items) {
     pipeline.className = "incident-pipeline";
     pipeline.innerHTML =
       '<span>Bug Hunter: ' +
-      (analysisRun ? analysisRun.status : 'not started') +
+      (analysisRun ? ('#' + analysisRun.id + ' · ' + analysisRun.status) : 'not started') +
       '</span>' +
       '<span>Builder: ' +
-      (builderRun ? builderRun.status : 'not started') +
+      (builderRun ? ('#' + builderRun.id + ' · ' + builderRun.status) : 'not started') +
       '</span>' +
       '<span>Approval: ' +
       (approval ? approval.status : 'not requested') +
@@ -470,6 +470,18 @@ function renderIncidents(items) {
         handoffIncidentToBuilder(item.id);
       });
       actions.appendChild(handoffButton);
+    }
+
+    if (builderRun) {
+      const openBuilderButton = document.createElement("button");
+      openBuilderButton.type = "button";
+      openBuilderButton.textContent = "Open Builder run";
+      openBuilderButton.addEventListener("click", () => {
+        selectedRunId = builderRun.id;
+        switchDashboardView("agents");
+        renderRuns(allRuns);
+      });
+      actions.appendChild(openBuilderButton);
     }
 
     if (
