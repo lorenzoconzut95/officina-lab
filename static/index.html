@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=16">
+    <link rel="stylesheet" href="/static/style.css?v=17">
 </head>
 <body>
     <main class="container">
@@ -137,6 +137,12 @@
                 <h2>Incident Queue</h2>
                 <span id="incident-count" class="muted">0 incidents</span>
             </div>
+            <div class="incident-filters">
+                <button type="button" data-incident-filter="open">Open</button>
+                <button type="button" data-incident-filter="investigating">Investigating</button>
+                <button type="button" data-incident-filter="resolved">Resolved</button>
+                <button type="button" data-incident-filter="all">All</button>
+            </div>
             <div id="incidents"></div>
         </section>
 
@@ -162,6 +168,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=23"></script>
+    <script src="/static/app.js?v=24"></script>
 </body>
 </html>
