@@ -319,7 +319,12 @@ function getVerificationState(run, structuredResult = null) {
     };
   }
 
-  const verdict = structuredResult?.verdict || null;
+  let verdict = structuredResult?.verdict || null;
+
+  if (!verdict && run.output) {
+    const match = run.output.match(/^VERDICT:\s*(verified|not_verified)\b/im);
+    verdict = match ? match[1].toLowerCase() : null;
+  }
 
   if (verdict === "verified") {
     return {
@@ -409,9 +414,6 @@ function renderIncidents(items) {
       ? allRuns.find(run => run.id === item.verification_run_id)
       : null;
 
-    const verificationResult = verificationRun && item.verification_run_id
-      ? null
-      : null;
     const verificationState = getVerificationState(verificationRun);
 
     const recommendation = document.createElement("div");
@@ -1348,7 +1350,11 @@ async function viewIncidentReport(incidentId, card) {
       ? "Approval #" + approval.id + " · " + approval.status + "\n"
       : "Not requested\n");
 
-  const verificationState = getVerificationState(verificationRun);
+  const verificationResult = report.verification_result || {};
+  const verificationState = getVerificationState(
+    verificationRun,
+    verificationResult
+  );
 
   text +=
     "\nVERIFICATION\n" +
