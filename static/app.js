@@ -1083,6 +1083,22 @@ async function viewIncidentReport(incidentId, card) {
       " · " + builderRun.status + "\n";
   }
 
+  const approval = report.approval;
+  const verificationRun = report.verification_run;
+
+  text +=
+    "\nAPPROVAL\n" +
+    (approval
+      ? "Approval #" + approval.id + " · " + approval.status + "\n"
+      : "Not requested\n");
+
+  text +=
+    "\nVERIFICATION\n" +
+    (verificationRun
+      ? "Run #" + verificationRun.run_id + " · " + verificationRun.status + "\n" +
+        (verificationRun.output || "No output yet.") + "\n"
+      : "Not started\n");
+
   if (analysis) {
     text +=
       "\nBUG HUNTER ANALYSIS\n" +
