@@ -929,6 +929,25 @@ async function viewIncidentReport(incidentId, card) {
     "Minimal test: " + (structured.minimal_test || "n/a") + "\n" +
     "Smallest fix: " + (structured.smallest_fix || "n/a") + "\n";
 
+  const builderProposal = report.builder_proposal || {};
+  const builderRun = report.builder_run;
+
+  text +=
+    "\nBUILDER PROPOSAL\n" +
+    "Action type: " + (builderProposal.action_type || "n/a") + "\n" +
+    "Target: " + (builderProposal.target || "n/a") + "\n" +
+    "Rationale: " + (builderProposal.rationale || "n/a") + "\n" +
+    "Change: " + (builderProposal.change || "n/a") + "\n" +
+    "Test: " + (builderProposal.test || "n/a") + "\n" +
+    "Risk: " + (builderProposal.risk || "n/a") + "\n" +
+    "Approval needed: " + (builderProposal.approval_needed || "n/a") + "\n";
+
+  if (builderRun) {
+    text +=
+      "Builder run: #" + builderRun.run_id +
+      " · " + builderRun.status + "\n";
+  }
+
   if (analysis) {
     text +=
       "\nBUG HUNTER ANALYSIS\n" +
