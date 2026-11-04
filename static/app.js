@@ -218,12 +218,20 @@ function renderIncidents(items) {
       '</div>' +
       '<div class="incident-message">' +
       item.latest_error_message +
-      '</div>' +
-      '<div class="run-actions">' +
-      '<button onclick="analyzeIncidentWithBugHunter(' +
-      JSON.stringify(item.key) + ')">Analyze with Bug Hunter</button>' +
       '</div>';
 
+    const actions = document.createElement("div");
+    actions.className = "run-actions";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Analyze with Bug Hunter";
+    button.addEventListener("click", () => {
+      analyzeIncidentWithBugHunter(item.key);
+    });
+
+    actions.appendChild(button);
+    card.appendChild(actions);
     c.appendChild(card);
   });
 }
