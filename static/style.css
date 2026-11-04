@@ -36,3 +36,40 @@ body{font-family:Arial,sans-serif;background:#111;color:#f5f5f5;margin:0}.contai
 .incident-case-study-title{font-weight:bold;margin-bottom:10px}
 .incident-case-study button{padding:8px 10px;margin-bottom:10px;border-radius:8px;border:1px solid #444;cursor:pointer}
 .incident-case-study pre{margin:0;padding:12px;background:#111;border-radius:8px;white-space:pre-wrap;overflow:auto;max-height:620px;font-size:12px;line-height:1.5}
+
+
+/* Control Tower navigation */
+*{box-sizing:border-box}
+body{background:#0c0c0d}
+.container{max-width:1180px;padding:28px 24px 60px}
+.app-shell-header{position:sticky;top:0;z-index:20;background:rgba(12,12,13,.95);backdrop-filter:blur(14px);border-bottom:1px solid #262626;padding:18px 24px 12px}
+.app-brand{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.app-brand h1{font-size:28px;margin:0}
+.app-status{font-size:11px;text-transform:uppercase;letter-spacing:.12em;border:1px solid #333;border-radius:999px;padding:6px 9px;color:#aaa}
+.main-nav{max-width:1180px;margin:14px auto 0;display:flex;gap:8px;overflow:auto}
+.nav-button{background:transparent;color:#929292;border:1px solid transparent;border-radius:9px;padding:9px 12px;cursor:pointer;white-space:nowrap}
+.nav-button.active{background:#f2f2f2;color:#111;border-color:#f2f2f2}
+.nav-badge{display:inline-flex;min-width:19px;height:19px;align-items:center;justify-content:center;margin-left:5px;padding:0 5px;background:#3a3a3a;color:#fff;border-radius:999px;font-size:11px}
+.nav-button.active .nav-badge{background:#111}
+.nav-badge.empty{opacity:.45}
+.dashboard-view{display:none}
+.dashboard-view.active{display:block}
+.view-heading{margin:10px 0 22px}
+.view-heading h2{font-size:32px;margin:3px 0 0}
+.view-heading p{color:#858585;margin:7px 0 0}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#777}
+.panel,.collapsible-panel{background:#131314;border:1px solid #29292b;border-radius:15px;padding:20px;margin-bottom:18px}
+.collapsible-panel{padding:0;overflow:hidden}
+.collapsible-panel summary{cursor:pointer;padding:17px 20px;font-weight:bold;display:flex;justify-content:space-between;gap:12px}
+.collapsible-panel[open] summary{border-bottom:1px solid #29292b}
+.collapsible-panel>div{padding:18px 20px}
+#projects,#agents,#runs,#memories,#approvals,#incidents,#error-log,#tool-calls{grid-template-columns:repeat(2,minmax(0,1fr))}
+.run-output{max-height:320px;overflow:auto}
+.incident-analysis{max-height:180px;overflow:auto}
+.tool-call-json{max-height:300px}
+@media(max-width:760px){
+  .container{padding:20px 14px 50px}
+  .app-shell-header{padding:14px}
+  .view-heading h2{font-size:27px}
+  #projects,#agents,#runs,#memories,#approvals,#incidents,#error-log,#tool-calls{grid-template-columns:1fr}
+}
