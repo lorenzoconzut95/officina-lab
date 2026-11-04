@@ -22,3 +22,8 @@ body{font-family:Arial,sans-serif;background:#111;color:#f5f5f5;margin:0}.contai
 
 .incident-card.status-resolved{opacity:.58}
 .incident-card.status-investigating{box-shadow:0 0 0 1px #ffbd2e inset}
+
+.incident-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.incident-filters button{padding:8px 10px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#f5f5f5;cursor:pointer}
+.incident-card.status-resolved{opacity:.62}
+.incident-card.status-investigating{box-shadow:0 0 0 1px #ffbd2e inset}
