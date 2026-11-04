@@ -19,3 +19,6 @@ body{font-family:Arial,sans-serif;background:#111;color:#f5f5f5;margin:0}.contai
 .incident-card.severity-medium{border-left:6px solid #ffbd2e}
 .incident-card.severity-low{border-left:6px solid #28c840}
 @media(max-width:640px){#incidents{grid-template-columns:1fr}}
+
+.incident-card.status-resolved{opacity:.58}
+.incident-card.status-investigating{box-shadow:0 0 0 1px #ffbd2e inset}
