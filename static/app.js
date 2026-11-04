@@ -7,6 +7,7 @@ let allToolCalls = [];
 let allErrors = [];
 let allIncidents = [];
 let incidentFilter = "open";
+let selectedRunId = null;
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -485,74 +486,171 @@ function renderToolCalls(items) {
   });
 }
 
-function renderRuns(runs) {
-  const c = document.getElementById("runs");
-  document.getElementById("run-count").textContent = runs.length + " runs";
-  c.innerHTML = "";
+function populateRunAgentFilter() {
+  const select = document.getElementById("run-filter-agent");
+  if (!select) return;
 
-  if (!runs.length) {
-    c.innerHTML = "<p>Nessuna esecuzione registrata.</p>";
+  const current = select.value || "all";
+  const names = [...new Set(
+    allRuns.map(run => run.agent_name).filter(Boolean)
+  )].sort();
+
+  select.innerHTML = '<option value="all">All agents</option>';
+
+  names.forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+
+  select.value = names.includes(current) ? current : "all";
+}
+
+function getVisibleRuns(runs) {
+  const status = document.getElementById("run-filter-status")?.value || "all";
+  const agent = document.getElementById("run-filter-agent")?.value || "all";
+  const search = (document.getElementById("run-search")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  return runs.filter(run => {
+    const statusOk = status === "all" || run.status === status;
+    const agentOk = agent === "all" || run.agent_name === agent;
+    const haystack = (
+      (run.task || "") + " " +
+      (run.output || "") + " " +
+      (run.agent_name || "")
+    ).toLowerCase();
+    const searchOk = !search || haystack.includes(search);
+    return statusOk && agentOk && searchOk;
+  });
+}
+
+function selectRun(runId) {
+  selectedRunId = runId;
+  renderRuns(allRuns);
+}
+
+function renderRunDetail(run) {
+  const detail = document.getElementById("run-detail");
+  if (!detail) return;
+
+  if (!run) {
+    detail.innerHTML =
+      '<div class="run-detail-empty">Select a run to inspect task, output, metrics and actions.</div>';
     return;
   }
 
-  runs.forEach(r => {
-    const card = document.createElement("div");
-    card.className = "run-card";
+  const totalTokens = (run.tokens_in || 0) + (run.tokens_out || 0);
+  let actions = "";
 
-    let html =
-      '<div class="run-title">' + r.agent_name + '</div>' +
-      '<div class="run-meta">' + r.task + '<br>Started: ' + r.started_at;
+  if (run.status === "running") {
+    actions +=
+      '<button onclick="executeRun(' + run.id + ')">Execute</button>' +
+      '<button onclick="finishRun(' + run.id + ',\'completed\')">Complete</button>' +
+      '<button onclick="finishRun(' + run.id + ',\'failed\')">Fail</button>';
+  }
 
-    if (r.ended_at) html += '<br>Ended: ' + r.ended_at;
+  if (
+    run.status === "completed" &&
+    run.output &&
+    run.agent_name.toLowerCase() === "explorer"
+  ) {
+    actions +=
+      '<button onclick="handoffToBuilder(' + run.id + ')">Handoff to Builder</button>';
+  }
 
-    html += '</div><span class="run-status ' + r.status + '">' + r.status + '</span>';
-
-    const totalTokens = (r.tokens_in || 0) + (r.tokens_out || 0);
-
-    html +=
-      '<div class="run-metrics">' +
-      'Tokens: ' + totalTokens.toLocaleString() +
-      ' · Cost: $' + Number(r.cost_usd || 0).toFixed(4) +
-      (r.duration_seconds != null ? ' · Duration: ' + r.duration_seconds + 's' : '') +
-      (r.model ? ' · Model: ' + r.model : '') +
-      '</div>';
-
-    if (r.context_sources) {
-      let sources = [];
-      try {
-        sources = JSON.parse(r.context_sources);
-      } catch (error) {
-        sources = [r.context_sources];
-      }
-
-      html += '<div class="run-metrics">Context: ' + sources.join(' · ') + '</div>';
+  let context = "";
+  if (run.context_sources) {
+    try {
+      const parsed = JSON.parse(run.context_sources);
+      context = Array.isArray(parsed) ? parsed.join(" · ") : String(parsed);
+    } catch (error) {
+      context = String(run.context_sources);
     }
+  }
 
-    if (r.output) html += '<div class="run-output">' + r.output + '</div>';
+  detail.innerHTML =
+    '<div class="run-detail-header">' +
+      '<div>' +
+        '<span class="eyebrow">Run #' + run.id + '</span>' +
+        '<h3>' + run.agent_name + '</h3>' +
+      '</div>' +
+      '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
+    '</div>' +
+    '<div class="run-detail-grid">' +
+      '<div><span class="run-detail-label">Started</span><strong>' + (run.started_at || "—") + '</strong></div>' +
+      '<div><span class="run-detail-label">Ended</span><strong>' + (run.ended_at || "—") + '</strong></div>' +
+      '<div><span class="run-detail-label">Tokens</span><strong>' + totalTokens.toLocaleString() + '</strong></div>' +
+      '<div><span class="run-detail-label">Cost</span><strong>$' + Number(run.cost_usd || 0).toFixed(4) + '</strong></div>' +
+    '</div>' +
+    '<div class="run-detail-block">' +
+      '<span class="run-detail-label">Task</span>' +
+      '<div class="run-detail-text">' + (run.task || "—") + '</div>' +
+    '</div>' +
+    '<div class="run-detail-block">' +
+      '<span class="run-detail-label">Output</span>' +
+      '<pre class="run-detail-output">' + (run.output || "No output yet.") + '</pre>' +
+    '</div>' +
+    (context
+      ? '<div class="run-detail-block"><span class="run-detail-label">Context</span><div class="run-detail-text">' + context + '</div></div>'
+      : '') +
+    '<div class="run-detail-actions">' + actions + '</div>';
+}
 
-    if (r.status === "running") {
-      html +=
-        '<div class="run-actions">' +
-        '<button onclick="executeRun(' + r.id + ')">Execute</button>' +
-        '<button onclick="finishRun(' + r.id + ',\'completed\')">Complete</button>' +
-        '<button onclick="finishRun(' + r.id + ',\'failed\')">Fail</button>' +
-        '</div>';
-    }
+function renderRuns(runs) {
+  const count = document.getElementById("run-count");
+  if (count) count.textContent = runs.length + " runs";
 
-    if (
-      r.status === "completed" &&
-      r.output &&
-      r.agent_name.toLowerCase() === "explorer"
-    ) {
-      html +=
-        '<div class="run-actions">' +
-        '<button onclick="handoffToBuilder(' + r.id + ')">Handoff to Builder</button>' +
-        '</div>';
-    }
+  populateRunAgentFilter();
 
-    card.innerHTML = html;
-    c.appendChild(card);
+  const visible = getVisibleRuns(runs);
+  const list = document.getElementById("run-list");
+
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  if (!visible.length) {
+    list.innerHTML = '<div class="run-list-empty">No runs match these filters.</div>';
+    renderRunDetail(null);
+    return;
+  }
+
+  if (
+    selectedRunId === null ||
+    !visible.some(run => run.id === selectedRunId)
+  ) {
+    selectedRunId = visible[0].id;
+  }
+
+  visible.forEach(run => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className =
+      "run-list-item" +
+      (run.id === selectedRunId ? " active" : "");
+    item.addEventListener("click", () => selectRun(run.id));
+
+    const preview = (run.task || "")
+      .replace(/\s+/g, " ")
+      .slice(0, 90);
+
+    item.innerHTML =
+      '<div class="run-list-top">' +
+        '<strong>' + run.agent_name + '</strong>' +
+        '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
+      '</div>' +
+      '<div class="run-list-task">' + preview + '</div>' +
+      '<div class="run-list-meta">#' + run.id + ' · ' + (run.started_at || "") + '</div>';
+
+    list.appendChild(item);
   });
+
+  renderRunDetail(
+    runs.find(run => run.id === selectedRunId)
+  );
 }
 
 function getFilteredTasks() {
