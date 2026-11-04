@@ -110,6 +110,22 @@ def role_instructions(agent):
     ).lower()
 
     if (
+        "builder" in identity
+        or "software engineer" in identity
+    ):
+        return (
+            "BUILDER PROPOSAL MODE: "
+            "When proposing the next action, return exactly these labeled sections, "
+            "each on its own line: ACTION_TYPE:, TARGET:, RATIONALE:, CHANGE:, "
+            "TEST:, RISK:, APPROVAL_NEEDED:. "
+            "ACTION_TYPE must be one of code_change, operational, no_action. "
+            "APPROVAL_NEEDED must be yes or no. "
+            "Verify current code before proposing a code change. "
+            "Prefer the smallest safe intervention. "
+            "Do not claim implementation unless it actually happened. "
+        )
+
+    if (
         "bug hunter" in identity
         or "debug" in identity
         or "qa" in identity
