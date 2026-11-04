@@ -5,7 +5,8 @@ from repositories.incidents import (
     create_incident,
     refresh_incident,
     update_incident_status as repo_update_incident_status,
-    link_analysis_run as repo_link_analysis_run
+    link_analysis_run as repo_link_analysis_run,
+    link_builder_run as repo_link_builder_run
 )
 from services.errors import list_incidents as derive_incidents
 from repositories.runs import get_run as repo_get_run
@@ -159,6 +160,66 @@ def parse_structured_analysis(output):
     return result
 
 
+
+
+BUILDER_PROPOSAL_LABELS = {
+    "ACTION_TYPE": "action_type",
+    "TARGET": "target",
+    "RATIONALE": "rationale",
+    "CHANGE": "change",
+    "TEST": "test",
+    "RISK": "risk",
+    "APPROVAL_NEEDED": "approval_needed"
+}
+
+
+def parse_builder_proposal(output):
+    result = {
+        "action_type": None,
+        "target": None,
+        "rationale": None,
+        "change": None,
+        "test": None,
+        "risk": None,
+        "approval_needed": None
+    }
+
+    if not output:
+        return result
+
+    current_key = None
+    buffer = []
+
+    def flush():
+        nonlocal buffer
+
+        if current_key is not None:
+            value = "\n".join(buffer).strip()
+            result[current_key] = value or None
+
+        buffer = []
+
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        matched = False
+
+        for label, key in BUILDER_PROPOSAL_LABELS.items():
+            prefix = label + ":"
+
+            if line.upper().startswith(prefix):
+                flush()
+                current_key = key
+                buffer = [line[len(prefix):].strip()]
+                matched = True
+                break
+
+        if not matched and current_key is not None:
+            buffer.append(raw_line)
+
+    flush()
+    return result
+
+
 def get_incident_report(incident_id):
     incident = get_incident(
         incident_id
@@ -168,14 +229,24 @@ def get_incident_report(incident_id):
         return None
 
     analysis_run = None
+    builder_run = None
 
     if incident["analysis_run_id"]:
         analysis_run = repo_get_run(
             incident["analysis_run_id"]
         )
 
+    if incident["builder_run_id"]:
+        builder_run = repo_get_run(
+            incident["builder_run_id"]
+        )
+
     structured_analysis = parse_structured_analysis(
         analysis_run["output"] if analysis_run else None
+    )
+
+    builder_proposal = parse_builder_proposal(
+        builder_run["output"] if builder_run else None
     )
 
     return {
@@ -191,6 +262,20 @@ def get_incident_report(incident_id):
             "message": incident["latest_error_message"]
         },
         "structured_analysis": structured_analysis,
+        "builder_proposal": builder_proposal,
+        "builder_run": (
+            {
+                "run_id": builder_run["id"],
+                "status": builder_run["status"],
+                "agent_name": builder_run["agent_name"],
+                "model": builder_run["model"],
+                "output": builder_run["output"],
+                "started_at": builder_run["started_at"],
+                "ended_at": builder_run["ended_at"]
+            }
+            if builder_run
+            else None
+        ),
         "analysis": (
             {
                 "run_id": analysis_run["id"],
@@ -378,7 +463,14 @@ def create_builder_handoff_for_incident(incident_id):
         "Do not modify protected data without approval."
     )
 
-    return create_run(
+    builder_run = create_run(
         builder["id"],
         handoff_task
     )
+
+    repo_link_builder_run(
+        incident_id,
+        builder_run["id"]
+    )
+
+    return builder_run
