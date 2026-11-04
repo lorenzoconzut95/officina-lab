@@ -264,6 +264,14 @@ function renderIncidents(items) {
 
     actions.appendChild(button);
 
+    const reportButton = document.createElement("button");
+    reportButton.type = "button";
+    reportButton.textContent = "View Incident Report";
+    reportButton.addEventListener("click", () => {
+      viewIncidentReport(item.id, card);
+    });
+    actions.appendChild(reportButton);
+
     if (item.status !== "investigating") {
       const investigatingButton = document.createElement("button");
       investigatingButton.type = "button";
@@ -754,6 +762,69 @@ async function executeRun(id) {
     loadIncidents(),
     loadErrors()
   ]);
+}
+
+async function viewIncidentReport(incidentId, card) {
+  const existing = card.querySelector(".incident-report");
+
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/report"
+  );
+
+  if (!r.ok) {
+    return alert("Errore nel caricamento dell'Incident Report");
+  }
+
+  const report = await r.json();
+  const analysis = report.analysis;
+
+  const box = document.createElement("div");
+  box.className = "incident-report";
+
+  let text =
+    "INCIDENT REPORT #" + report.incident_id + "\n\n" +
+    "Key: " + report.incident_key + "\n" +
+    "Status: " + report.status + "\n" +
+    "Severity: " + report.severity + "\n" +
+    "Occurrences: " + report.occurrences + "\n" +
+    "Created: " + report.created_at + "\n" +
+    "Updated: " + report.updated_at + "\n";
+
+  if (report.resolved_at) {
+    text += "Resolved: " + report.resolved_at + "\n";
+  }
+
+  text +=
+    "\nLATEST ERROR\n" +
+    "Run: #" + report.latest_error.run_id + "\n" +
+    "Agent: " + report.latest_error.agent_name + "\n" +
+    "Task: " + report.latest_error.task + "\n" +
+    "Message:\n" + report.latest_error.message + "\n";
+
+  if (analysis) {
+    text +=
+      "\nBUG HUNTER ANALYSIS\n" +
+      "Run: #" + analysis.run_id +
+      " · " + analysis.status + "\n" +
+      "Agent: " + analysis.agent_name + "\n" +
+      "Model: " + (analysis.model || "n/a") + "\n" +
+      "Tokens: " +
+      ((analysis.tokens_in || 0) + (analysis.tokens_out || 0)) +
+      "\nCost: $" + Number(analysis.cost_usd || 0).toFixed(4) +
+      "\nStarted: " + analysis.started_at + "\n" +
+      "Ended: " + (analysis.ended_at || "running") + "\n\n" +
+      (analysis.output || "Nessun output disponibile.");
+  } else {
+    text += "\nBUG HUNTER ANALYSIS\nNessuna analisi collegata.";
+  }
+
+  box.textContent = text;
+  card.appendChild(box);
 }
 
 async function setIncidentStatus(incidentId, status) {
