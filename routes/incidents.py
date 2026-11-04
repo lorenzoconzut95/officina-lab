@@ -6,7 +6,9 @@ from services.incidents import (
     link_analysis_run,
     get_incident_report,
     build_incident_case_study,
-    create_builder_handoff_for_incident
+    create_builder_handoff_for_incident,
+    create_incident_proposal_approval,
+    create_incident_verification_run
 )
 
 
@@ -121,6 +123,51 @@ def handoff_incident_to_builder(incident_id: int):
         raise HTTPException(
             status_code=404,
             detail="Builder agent not found"
+        )
+
+    return run
+
+
+
+@router.post("/{incident_id}/proposal-approval", status_code=201)
+def request_incident_proposal_approval(incident_id: int):
+    approval = create_incident_proposal_approval(incident_id)
+
+    if approval is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    if approval.get("error") == "builder_not_completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Builder run must be completed before approval"
+        )
+
+    if approval.get("error") == "proposal_not_structured":
+        raise HTTPException(
+            status_code=400,
+            detail="Builder proposal is not structured"
+        )
+
+    return approval
+
+
+@router.post("/{incident_id}/verify", status_code=201)
+def verify_incident(incident_id: int):
+    run = create_incident_verification_run(incident_id)
+
+    if run is None:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    if run.get("error") == "approval_required":
+        raise HTTPException(
+            status_code=400,
+            detail="Approved Builder proposal required before verification"
+        )
+
+    if run.get("error") == "bug_hunter_not_found":
+        raise HTTPException(
+            status_code=404,
+            detail="Bug Hunter agent not found"
         )
 
     return run
