@@ -192,3 +192,30 @@ Verified:
 - Current test suite passed locally on 2026-11-04.
 
 This closes the gap identified by Bug Hunter between historical error evidence, implementation evidence and regression-test evidence.
+
+
+## Verified 2026-11-04 — Incident Lifecycle v1
+
+Implemented and verified:
+- Persistent incidents stored in SQLite.
+- Incident states: open, investigating, resolved.
+- Dashboard filters for Open / Investigating / Resolved / All.
+- Analyze with Bug Hunter automatically moves an incident to investigating.
+- Bug Hunter analysis runs are linked back to incidents through analysis_run_id.
+- Incident cards show linked analysis run status and output preview.
+- Resolved incidents remain available in history.
+- Resolved incidents automatically reopen when the same error recurs and the occurrence count increases.
+- Regression tests cover recurrence reopening and stable resolved state.
+
+Validated locally on 2026-11-04:
+- tests.test_incident_lifecycle passes.
+
+Current incident workflow:
+error
+→ persistent incident
+→ open
+→ Bug Hunter analysis
+→ investigating
+→ linked analysis run
+→ resolved
+→ automatic reopen if the error recurs
