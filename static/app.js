@@ -556,16 +556,16 @@ function renderIncidents(items) {
     const pipeline = document.createElement("div");
     pipeline.className = "incident-pipeline";
     pipeline.innerHTML =
-      '<span>Bug Hunter: ' +
-      (analysisRun ? ('#' + analysisRun.id + ' · ' + analysisRun.status) : 'not started') +
+      '<span>Analysis: ' +
+      (analysisRun ? analysisRun.status : 'not started') +
       '</span>' +
-      '<span>Builder: ' +
-      (builderRun ? ('#' + builderRun.id + ' · ' + builderRun.status) : 'not started') +
+      '<span>Build proposal: ' +
+      (builderRun ? builderRun.status : 'not started') +
       '</span>' +
-      '<span>Approval: ' +
+      '<span>Decision: ' +
       (approval ? approval.status : 'not requested') +
       '</span>' +
-      '<span>Verify: ' +
+      '<span>Verification: ' +
       (verificationRun ? verificationRun.status : 'not started') +
       '</span>';
     card.appendChild(pipeline);
@@ -677,6 +677,15 @@ function renderIncidents(items) {
       '<div><strong>Latest task</strong><br>' + item.latest_task + '</div>' +
       '<div><strong>Latest error</strong><br>' + item.latest_error_message + '</div>' +
       '<div><strong>Updated</strong><br>' + item.updated_at + '</div>' +
+      '<details class="incident-technical-context">' +
+      '<summary>Technical context</summary>' +
+      '<pre>' + JSON.stringify({
+        analysis_run_id:item.analysis_run_id,
+        builder_run_id:item.builder_run_id,
+        approval_id:item.approval_id,
+        verification_run_id:item.verification_run_id
+      }, null, 2) + '</pre>' +
+      '</details>' +
       '</div>';
 
     const secondary = document.createElement("div");
