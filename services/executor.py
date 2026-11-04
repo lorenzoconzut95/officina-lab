@@ -60,6 +60,41 @@ def build_local_output(agent, task):
     )
 
 
+def humanize_llm_error(error):
+    text = str(error)
+    lower = text.lower()
+
+    if "400" in lower or "bad request" in lower:
+        return (
+            "OpenAI request rejected (400). "
+            "The model request was not accepted. "
+            "Check model/input/tool configuration and retry."
+        )
+
+    if "401" in lower or "invalid_api_key" in lower:
+        return (
+            "OpenAI authentication failed (401). "
+            "Check OPENAI_API_KEY in the server environment."
+        )
+
+    if "429" in lower or "rate limit" in lower:
+        return (
+            "OpenAI rate limit reached (429). "
+            "Retry later or reduce request frequency."
+        )
+
+    if "timeout" in lower:
+        return (
+            "OpenAI request timed out. "
+            "Retry the run."
+        )
+
+    return (
+        "OpenAI execution failed. "
+        "Open technical details only if you need to debug it."
+    )
+
+
 def execute_run(run_id):
     run = get_run(run_id)
 
@@ -161,7 +196,11 @@ def execute_run(run_id):
         return finish_run(
             run_id,
             "failed",
-            "LLM execution failed: " + str(error),
+            (
+                humanize_llm_error(error)
+                + "\n\nTECHNICAL_DETAIL:\n"
+                + str(error)
+            ),
             0,
             0,
             0
