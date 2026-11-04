@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=22">
+    <link rel="stylesheet" href="/static/style.css?v=23">
 </head>
 <body>
     <header class="app-shell-header">
@@ -115,9 +115,23 @@
                 <div id="agents"></div>
             </section>
 
+            <section class="approvals-section panel approvals-priority">
+                <div class="section-header">
+                    <div>
+                        <span class="eyebrow">Human in the loop</span>
+                        <h2>Approvals</h2>
+                    </div>
+                    <span id="approval-count" class="muted">0 pending</span>
+                </div>
+                <div id="approvals"></div>
+            </section>
+
             <section class="runs-section panel">
                 <div class="section-header">
-                    <h2>Agent Runs</h2>
+                    <div>
+                        <span class="eyebrow">Execution workspace</span>
+                        <h2>Run Workspace</h2>
+                    </div>
                     <span id="run-count" class="muted">0 runs</span>
                 </div>
 
@@ -128,21 +142,33 @@
                     <div class="stat-card"><span class="stat-label">Cost</span><strong id="cost-total">$0.00</strong></div>
                 </section>
 
-                <div class="run-form">
+                <div class="run-form run-compose">
                     <select id="run-agent"></select>
-                    <input id="run-task" type="text" placeholder="Run task">
+                    <input id="run-task" type="text" placeholder="Describe the run task">
                     <button id="start-run-button">Start Run</button>
                 </div>
 
-                <div id="runs"></div>
-            </section>
-
-            <section class="approvals-section panel">
-                <div class="section-header">
-                    <h2>Approvals</h2>
-                    <span id="approval-count" class="muted">0 pending</span>
+                <div class="run-toolbar">
+                    <select id="run-filter-status">
+                        <option value="all">All statuses</option>
+                        <option value="running">Running</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <select id="run-filter-agent">
+                        <option value="all">All agents</option>
+                    </select>
+                    <input id="run-search" type="search" placeholder="Search task or output">
                 </div>
-                <div id="approvals"></div>
+
+                <div class="run-workspace">
+                    <aside id="run-list" class="run-list"></aside>
+                    <section id="run-detail" class="run-detail">
+                        <div class="run-detail-empty">
+                            Select a run to inspect task, output, metrics and actions.
+                        </div>
+                    </section>
+                </div>
             </section>
         </section>
 
@@ -231,6 +257,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=38"></script>
+    <script src="/static/app.js?v=39"></script>
 </body>
 </html>
