@@ -125,6 +125,18 @@ def approve(approval_id):
                 )
             )
 
+    if approval["action"] == "incident_builder_proposal":
+        payload = approval["payload"]
+        remember_approved_action(
+            approval,
+            "Officina Lab",
+            (
+                "approved Builder proposal for incident #"
+                + str(payload["incident_id"])
+                + " (" + str(payload.get("action_type") or "unknown") + ")"
+            )
+        )
+
     return repo_resolve_approval(
         approval_id,
         "approved"
