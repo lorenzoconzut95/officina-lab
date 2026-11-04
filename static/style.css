@@ -8,3 +8,14 @@ body{font-family:Arial,sans-serif;background:#111;color:#f5f5f5;margin:0}.contai
 .error-log-section{margin-top:36px;margin-bottom:28px}#error-log{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.error-card{background:#1a1a1a;border:1px solid #4a2b2b;border-radius:12px;padding:16px}.error-title{font-weight:bold;color:#ff5f57}.error-meta{color:#888;font-size:12px;margin-top:6px}.error-message{margin-top:10px;padding:10px;background:#151515;border-radius:8px;font-size:13px;white-space:pre-wrap}@media(max-width:640px){#error-log{grid-template-columns:1fr}}
 
 #agent-goal{min-width:260px}
+
+.incident-queue-section{margin-top:36px;margin-bottom:28px}
+#incidents{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.incident-card{background:#1a1a1a;border:1px solid #333;border-radius:12px;padding:16px}
+.incident-title{font-weight:bold}
+.incident-meta{color:#888;font-size:12px;margin-top:6px;line-height:1.5}
+.incident-message{margin-top:10px;padding:10px;background:#151515;border-radius:8px;font-size:13px;white-space:pre-wrap}
+.incident-card.severity-high{border-left:6px solid #ff5f57}
+.incident-card.severity-medium{border-left:6px solid #ffbd2e}
+.incident-card.severity-low{border-left:6px solid #28c840}
+@media(max-width:640px){#incidents{grid-template-columns:1fr}}
