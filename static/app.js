@@ -218,6 +218,10 @@ function renderIncidents(items) {
       '</div>' +
       '<div class="incident-message">' +
       item.latest_error_message +
+      '</div>' +
+      '<div class="run-actions">' +
+      '<button onclick="analyzeIncidentWithBugHunter(' +
+      JSON.stringify(item.key) + ')">Analyze with Bug Hunter</button>' +
       '</div>';
 
     c.appendChild(card);
@@ -676,6 +680,57 @@ async function executeRun(id) {
     loadAgents(),
     loadIncidents(),
     loadErrors()
+  ]);
+}
+
+async function analyzeIncidentWithBugHunter(incidentKey) {
+  const incident = allIncidents.find(
+    item => item.key === incidentKey
+  );
+
+  if (!incident) {
+    return alert("Incidente non trovato");
+  }
+
+  const bugHunter = allAgents.find(agent =>
+    agent.name.toLowerCase().replace(/\s+/g, " ").includes("bug hunter") ||
+    agent.role.toLowerCase().includes("debug")
+  );
+
+  if (!bugHunter) {
+    return alert("Crea prima l'agente Bug Hunter");
+  }
+
+  const task =
+    "Analizza questo incidente reale di Officina Lab.\n\n" +
+    "Incident key: " + incident.key + "\n" +
+    "Severity: " + incident.severity + "\n" +
+    "Occurrences: " + incident.count + "\n" +
+    "Latest run: #" + incident.latest_run_id + "\n" +
+    "Latest agent: " + incident.latest_agent_name + "\n" +
+    "Latest task: " + incident.latest_task + "\n" +
+    "Latest error:\n" + incident.latest_error_message + "\n\n" +
+    "Usa list_recent_errors e, se serve, list_project_files e " +
+    "read_project_file. Separa evidenze da ipotesi. Restituisci: " +
+    "sintomo, evidenza, causa probabile, confidenza, test minimo e " +
+    "fix più piccolo. Non modificare nulla senza approval.";
+
+  const r = await fetch("/api/runs", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      agent_id:bugHunter.id,
+      task:task
+    })
+  });
+
+  if (!r.ok) {
+    return alert("Errore nella creazione del run Bug Hunter");
+  }
+
+  await Promise.all([
+    loadRuns(),
+    loadAgents()
   ]);
 }
 
