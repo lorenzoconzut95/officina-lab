@@ -738,7 +738,7 @@ function renderRunDetail(run) {
 
   if (run.status === "running") {
     actions +=
-      '<button onclick="executeRun(' + run.id + ')">Execute</button>' +
+      '<button onclick="executeRun(' + run.id + ', this)">Execute</button>' +
       '<button onclick="finishRun(' + run.id + ',\'completed\')">Complete</button>' +
       '<button onclick="finishRun(' + run.id + ',\'failed\')">Fail</button>';
   }
@@ -1172,15 +1172,63 @@ async function startRun() {
   ]);
 }
 
-async function executeRun(id) {
-  const r = await fetch("/api/runs/" + id + "/execute", {method:"POST"});
-  if (!r.ok) return alert("Errore nell'esecuzione dell'agente");
-  await Promise.all([
-    loadRuns(),
-    loadAgents(),
-    loadIncidents(),
-    loadErrors()
-  ]);
+async function executeRun(id, button = null) {
+  const originalLabel = button ? button.textContent : null;
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Executing...";
+  }
+
+  try {
+    const r = await fetch(
+      "/api/runs/" + id + "/execute",
+      { method:"POST" }
+    );
+
+    let payload = null;
+
+    try {
+      payload = await r.json();
+    } catch (error) {
+      payload = null;
+    }
+
+    if (!r.ok) {
+      const detail =
+        payload?.detail ||
+        payload?.error ||
+        ("HTTP " + r.status);
+
+      alert("Run #" + id + " execution failed: " + detail);
+      return;
+    }
+
+    selectedRunId = id;
+
+    await Promise.all([
+      loadRuns(),
+      loadAgents(),
+      loadIncidents(),
+      loadErrors()
+    ]);
+
+    const refreshedRun = allRuns.find(run => run.id === id);
+
+    if (refreshedRun) {
+      renderRunDetail(refreshedRun);
+    }
+  } catch (error) {
+    alert(
+      "Impossibile raggiungere il backend per il run #" +
+      id + ": " + error.message
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalLabel || "Execute";
+    }
+  }
 }
 
 async function handoffIncidentToBuilder(incidentId) {
