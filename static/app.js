@@ -259,6 +259,18 @@ function renderErrors(items) {
       '<br>' + item.created_at + '</div>' +
       '<div class="error-message">' + item.error_message + '</div>';
 
+    const actions = document.createElement("div");
+    actions.className = "run-actions";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Analyze with Bug Hunter";
+    button.addEventListener("click", () => {
+      analyzeErrorWithBugHunter(item);
+    });
+
+    actions.appendChild(button);
+    card.appendChild(actions);
     c.appendChild(card);
   });
 }
@@ -688,6 +700,47 @@ async function executeRun(id) {
     loadAgents(),
     loadIncidents(),
     loadErrors()
+  ]);
+}
+
+async function analyzeErrorWithBugHunter(errorItem) {
+  const bugHunter = allAgents.find(agent =>
+    agent.name.toLowerCase().replace(/\s+/g, " ").includes("bug hunter") ||
+    agent.role.toLowerCase().includes("debug")
+  );
+
+  if (!bugHunter) {
+    return alert("Crea prima l'agente Bug Hunter");
+  }
+
+  const task =
+    "Analizza questo errore reale di Officina Lab.\n\n" +
+    "Run: #" + errorItem.run_id + "\n" +
+    "Agent: " + errorItem.agent_name + "\n" +
+    "Task: " + errorItem.task + "\n" +
+    "Created at: " + errorItem.created_at + "\n" +
+    "Error:\n" + errorItem.error_message + "\n\n" +
+    "Usa list_recent_errors e, se serve, list_project_files e " +
+    "read_project_file. Separa evidenze da ipotesi. Restituisci: " +
+    "sintomo, evidenza, causa probabile, confidenza, test minimo e " +
+    "fix più piccolo. Non modificare nulla senza approval.";
+
+  const r = await fetch("/api/runs", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      agent_id:bugHunter.id,
+      task:task
+    })
+  });
+
+  if (!r.ok) {
+    return alert("Errore nella creazione del run Bug Hunter");
+  }
+
+  await Promise.all([
+    loadRuns(),
+    loadAgents()
   ]);
 }
 
