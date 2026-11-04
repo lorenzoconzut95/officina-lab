@@ -832,6 +832,25 @@ function selectRun(runId) {
   renderRuns(allRuns);
 }
 
+function splitRunOutput(output) {
+  const text = output || "";
+  const marker = "TECHNICAL_DETAIL:";
+
+  if (!text.includes(marker)) {
+    return {
+      summary: text,
+      technical: ""
+    };
+  }
+
+  const parts = text.split(marker);
+
+  return {
+    summary: parts[0].trim(),
+    technical: parts.slice(1).join(marker).trim()
+  };
+}
+
 function splitRunTask(task) {
   const text = task || "";
   const marker = "CURRENT PROJECT STATE SNAPSHOT:";
@@ -891,6 +910,7 @@ function renderRunDetail(run) {
   }
 
   const taskParts = splitRunTask(run.task);
+  const outputParts = splitRunOutput(run.output);
 
   detail.innerHTML =
     '<div class="run-detail-header">' +
@@ -918,8 +938,14 @@ function renderRunDetail(run) {
       : '') +
     '<div class="run-detail-block run-output-block">' +
       '<span class="run-detail-label">Output</span>' +
-      '<pre class="run-detail-output">' + (run.output || "No output yet.") + '</pre>' +
+      '<pre class="run-detail-output">' + (outputParts.summary || "No output yet.") + '</pre>' +
     '</div>' +
+    (outputParts.technical
+      ? '<details class="run-technical-context">' +
+          '<summary>Technical error details</summary>' +
+          '<pre>' + outputParts.technical + '</pre>' +
+        '</details>'
+      : '') +
     (context
       ? '<details class="run-technical-context">' +
           '<summary>Context sources</summary>' +
