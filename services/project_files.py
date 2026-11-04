@@ -79,6 +79,12 @@ def read_project_file(path, max_chars=12000):
         / path
     )
 
+    if not _is_safe_path(candidate):
+        return {
+            "error": "file_not_allowed",
+            "path": path
+        }
+
     if not candidate.exists():
         return {
             "error": "file_not_found",
@@ -88,12 +94,6 @@ def read_project_file(path, max_chars=12000):
     if not candidate.is_file():
         return {
             "error": "not_a_file",
-            "path": path
-        }
-
-    if not _is_safe_path(candidate):
-        return {
-            "error": "file_not_allowed",
             "path": path
         }
 
