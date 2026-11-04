@@ -14,7 +14,8 @@ def row_to_dict(row):
         "latest_error_message": row["latest_error_message"],
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
-        "resolved_at": row["resolved_at"]
+        "resolved_at": row["resolved_at"],
+        "analysis_run_id": row["analysis_run_id"]
     }
 
 
@@ -183,6 +184,28 @@ def update_incident_status(incident_id, status):
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (status, incident_id))
+
+    connection.commit()
+    connection.close()
+
+    return get_incident(incident_id)
+
+
+
+def link_analysis_run(incident_id, run_id):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE incidents
+        SET
+            analysis_run_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (
+        run_id,
+        incident_id
+    ))
 
     connection.commit()
     connection.close()
