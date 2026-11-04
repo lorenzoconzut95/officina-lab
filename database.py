@@ -115,6 +115,23 @@ def init_db():
     """)
 
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS incidents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            incident_key TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL DEFAULT 'open',
+            severity TEXT NOT NULL DEFAULT 'low',
+            occurrences INTEGER NOT NULL DEFAULT 1,
+            latest_run_id INTEGER,
+            latest_agent_name TEXT,
+            latest_task TEXT,
+            latest_error_message TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TEXT
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,
