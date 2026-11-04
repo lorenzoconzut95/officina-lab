@@ -6,6 +6,7 @@ let allApprovals = [];
 let allToolCalls = [];
 let allErrors = [];
 let allIncidents = [];
+let incidentFilter = "open";
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -192,20 +193,25 @@ function renderApprovals(approvals) {
 
 function renderIncidents(items) {
   const c = document.getElementById("incidents");
+  const visibleItems = incidentFilter === "all"
+    ? items
+    : items.filter(item => item.status === incidentFilter);
+
   document.getElementById("incident-count").textContent =
-    items.length + " incidents";
+    visibleItems.length + " " + incidentFilter + " incidents";
 
   c.innerHTML = "";
 
-  if (!items.length) {
+  if (!visibleItems.length) {
     c.innerHTML = "<p>Nessun incidente raggruppato.</p>";
     return;
   }
 
-  items.forEach(item => {
+  visibleItems.forEach(item => {
     const card = document.createElement("div");
     card.className =
-      "incident-card severity-" + item.severity;
+      "incident-card severity-" + item.severity +
+      " status-" + item.status;
 
     card.innerHTML =
       '<div class="incident-title">' + item.incident_key + '</div>' +
@@ -874,6 +880,13 @@ async function finishRun(id,status) {
   if (!r.ok) return alert("Errore nella chiusura del run");
   await Promise.all([loadRuns(),loadAgents()]);
 }
+
+document.querySelectorAll("[data-incident-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    incidentFilter = button.dataset.incidentFilter;
+    renderIncidents(allIncidents);
+  });
+});
 
 document.getElementById("create-task-button").onclick = createTask;
 document.getElementById("create-agent-button").onclick = createAgent;
