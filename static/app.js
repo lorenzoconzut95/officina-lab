@@ -294,7 +294,7 @@ function renderApprovals(approvals) {
   }
 }
 
-function getVerificationState(run) {
+function getVerificationState(run, structuredResult = null) {
   if (!run) {
     return {
       key: "not_started",
@@ -319,20 +319,29 @@ function getVerificationState(run) {
     };
   }
 
-  const output = run.output || "";
-  const verified = /^SMALLEST_FIX:\s*VERIFIED\b/im.test(output);
+  const verdict = structuredResult?.verdict || null;
 
-  return verified
-    ? {
-        key: "ready",
-        label: "Ready to resolve",
-        ready: true
-      }
-    : {
-        key: "needs_action",
-        label: "Needs action",
-        ready: false
-      };
+  if (verdict === "verified") {
+    return {
+      key: "ready",
+      label: "Ready to resolve",
+      ready: true
+    };
+  }
+
+  if (verdict === "not_verified") {
+    return {
+      key: "needs_action",
+      label: "Needs action",
+      ready: false
+    };
+  }
+
+  return {
+    key: "unknown",
+    label: "Verification format invalid",
+    ready: false
+  };
 }
 
 function renderIncidents(items) {
@@ -400,6 +409,9 @@ function renderIncidents(items) {
       ? allRuns.find(run => run.id === item.verification_run_id)
       : null;
 
+    const verificationResult = verificationRun && item.verification_run_id
+      ? null
+      : null;
     const verificationState = getVerificationState(verificationRun);
 
     const recommendation = document.createElement("div");
