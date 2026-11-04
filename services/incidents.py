@@ -4,7 +4,8 @@ from repositories.incidents import (
     get_incident_by_key,
     create_incident,
     refresh_incident,
-    update_incident_status as repo_update_incident_status
+    update_incident_status as repo_update_incident_status,
+    link_analysis_run as repo_link_analysis_run
 )
 from services.errors import list_incidents as derive_incidents
 
@@ -68,4 +69,19 @@ def update_incident_status(incident_id, status):
     return repo_update_incident_status(
         incident_id,
         status
+    )
+
+
+
+def link_analysis_run(incident_id, run_id):
+    incident = get_incident(
+        incident_id
+    )
+
+    if incident is None:
+        return None
+
+    return repo_link_analysis_run(
+        incident_id,
+        run_id
     )
