@@ -281,6 +281,14 @@ function renderIncidents(items) {
     preview.textContent = messagePreview || "Nessun messaggio errore.";
     card.appendChild(preview);
 
+    const approval = item.approval_id
+      ? allApprovals.find(a => a.id === item.approval_id)
+      : null;
+
+    const verificationRun = item.verification_run_id
+      ? allRuns.find(run => run.id === item.verification_run_id)
+      : null;
+
     const pipeline = document.createElement("div");
     pipeline.className = "incident-pipeline";
     pipeline.innerHTML =
@@ -289,6 +297,12 @@ function renderIncidents(items) {
       '</span>' +
       '<span>Builder: ' +
       (builderRun ? builderRun.status : 'not started') +
+      '</span>' +
+      '<span>Approval: ' +
+      (approval ? approval.status : 'not requested') +
+      '</span>' +
+      '<span>Verify: ' +
+      (verificationRun ? verificationRun.status : 'not started') +
       '</span>';
     card.appendChild(pipeline);
 
@@ -311,6 +325,36 @@ function renderIncidents(items) {
         handoffIncidentToBuilder(item.id);
       });
       actions.appendChild(handoffButton);
+    }
+
+    if (
+      builderRun &&
+      builderRun.status === "completed" &&
+      !approval
+    ) {
+      const approvalButton = document.createElement("button");
+      approvalButton.type = "button";
+      approvalButton.textContent = "Request Approval";
+      approvalButton.addEventListener("click", () => {
+        requestIncidentApproval(item.id);
+      });
+      actions.appendChild(approvalButton);
+    }
+
+    if (
+      approval &&
+      approval.status === "approved" &&
+      (!verificationRun || verificationRun.status === "completed")
+    ) {
+      const verifyButton = document.createElement("button");
+      verifyButton.type = "button";
+      verifyButton.textContent = verificationRun
+        ? "Verify Again"
+        : "Start Verification";
+      verifyButton.addEventListener("click", () => {
+        startIncidentVerification(item.id);
+      });
+      actions.appendChild(verifyButton);
     }
 
     const reportButton = document.createElement("button");
@@ -855,6 +899,47 @@ async function handoffIncidentToBuilder(incidentId) {
 
   await Promise.all([
     loadRuns(),
+    loadAgents()
+  ]);
+}
+
+async function requestIncidentApproval(incidentId) {
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/proposal-approval",
+    { method:"POST" }
+  );
+
+  if (!r.ok) {
+    const error = await r.json();
+    return alert(
+      "Errore approval: " +
+      (error.detail || "errore sconosciuto")
+    );
+  }
+
+  await Promise.all([
+    loadApprovals(),
+    loadIncidents()
+  ]);
+}
+
+async function startIncidentVerification(incidentId) {
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/verify",
+    { method:"POST" }
+  );
+
+  if (!r.ok) {
+    const error = await r.json();
+    return alert(
+      "Errore verification: " +
+      (error.detail || "errore sconosciuto")
+    );
+  }
+
+  await Promise.all([
+    loadRuns(),
+    loadIncidents(),
     loadAgents()
   ]);
 }
