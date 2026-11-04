@@ -98,6 +98,64 @@ def link_analysis_run(incident_id, run_id):
 
 
 
+
+
+STRUCTURED_ANALYSIS_LABELS = {
+    "SYMPTOM": "symptom",
+    "EVIDENCE": "evidence",
+    "ROOT_CAUSE": "root_cause",
+    "CONFIDENCE": "confidence",
+    "MINIMAL_TEST": "minimal_test",
+    "SMALLEST_FIX": "smallest_fix"
+}
+
+
+def parse_structured_analysis(output):
+    result = {
+        "symptom": None,
+        "evidence": None,
+        "root_cause": None,
+        "confidence": None,
+        "minimal_test": None,
+        "smallest_fix": None
+    }
+
+    if not output:
+        return result
+
+    current_key = None
+    buffer = []
+
+    def flush():
+        nonlocal buffer
+
+        if current_key is not None:
+            value = "\n".join(buffer).strip()
+            result[current_key] = value or None
+
+        buffer = []
+
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        matched = False
+
+        for label, key in STRUCTURED_ANALYSIS_LABELS.items():
+            prefix = label + ":"
+
+            if line.upper().startswith(prefix):
+                flush()
+                current_key = key
+                buffer = [line[len(prefix):].strip()]
+                matched = True
+                break
+
+        if not matched and current_key is not None:
+            buffer.append(raw_line)
+
+    flush()
+    return result
+
+
 def get_incident_report(incident_id):
     incident = get_incident(
         incident_id
@@ -113,6 +171,10 @@ def get_incident_report(incident_id):
             incident["analysis_run_id"]
         )
 
+    structured_analysis = parse_structured_analysis(
+        analysis_run["output"] if analysis_run else None
+    )
+
     return {
         "incident_id": incident["id"],
         "incident_key": incident["incident_key"],
@@ -125,6 +187,7 @@ def get_incident_report(incident_id):
             "task": incident["latest_task"],
             "message": incident["latest_error_message"]
         },
+        "structured_analysis": structured_analysis,
         "analysis": (
             {
                 "run_id": analysis_run["id"],
