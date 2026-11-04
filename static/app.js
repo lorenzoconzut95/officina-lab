@@ -5,6 +5,7 @@ let allMemories = [];
 let allApprovals = [];
 let allToolCalls = [];
 let allErrors = [];
+let allIncidents = [];
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -184,6 +185,40 @@ function renderApprovals(approvals) {
       '<div class="approval-payload">' + payload + '</div>' +
       '<span class="approval-status ' + a.status + '">' + a.status + '</span>' +
       actions;
+
+    c.appendChild(card);
+  });
+}
+
+function renderIncidents(items) {
+  const c = document.getElementById("incidents");
+  document.getElementById("incident-count").textContent =
+    items.length + " incidents";
+
+  c.innerHTML = "";
+
+  if (!items.length) {
+    c.innerHTML = "<p>Nessun incidente raggruppato.</p>";
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement("div");
+    card.className =
+      "incident-card severity-" + item.severity;
+
+    card.innerHTML =
+      '<div class="incident-title">' + item.key + '</div>' +
+      '<div class="incident-meta">' +
+      'Severity: ' + item.severity +
+      ' · Occurrences: ' + item.count +
+      '<br>Latest run: #' + item.latest_run_id +
+      ' · Agent: ' + item.latest_agent_name +
+      '<br>' + item.latest_created_at +
+      '</div>' +
+      '<div class="incident-message">' +
+      item.latest_error_message +
+      '</div>';
 
     c.appendChild(card);
   });
@@ -428,6 +463,12 @@ async function loadApprovals() {
   renderApprovals(allApprovals);
 }
 
+async function loadIncidents() {
+  const r = await fetch("/api/errors/incidents?limit=50");
+  allIncidents = await r.json();
+  renderIncidents(allIncidents);
+}
+
 async function loadErrors() {
   const r = await fetch("/api/errors?limit=30");
   allErrors = await r.json();
@@ -452,6 +493,7 @@ async function refreshDashboard() {
     loadRuns(),
     loadMemories(),
     loadApprovals(),
+    loadIncidents(),
     loadErrors(),
     loadToolCalls(),
     loadActivity()
@@ -632,6 +674,7 @@ async function executeRun(id) {
   await Promise.all([
     loadRuns(),
     loadAgents(),
+    loadIncidents(),
     loadErrors()
   ]);
 }
