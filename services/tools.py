@@ -4,6 +4,7 @@ from repositories.tasks import list_tasks
 from repositories.memories import list_memories
 from repositories.runs import list_runs
 from repositories.tool_calls import list_tool_calls
+from repositories.errors import list_errors
 from services.approvals import create_approval
 from services.tool_calls import log_tool_call
 from services.project_state import build_project_state
@@ -78,6 +79,27 @@ TOOL_DEFINITIONS = [
                 "status": {
                     "type": "string",
                     "enum": ["all", "running", "completed", "failed"]
+                }
+            },
+            "required": [],
+            "additionalProperties": False
+        }
+    },
+    {
+        "type": "function",
+        "name": "list_recent_errors",
+        "description": (
+            "Read recent Officina run errors from the separate Error Log. "
+            "Use this when diagnosing failures, identifying recurring error "
+            "patterns, or proposing a minimal regression test."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
                 }
             },
             "required": [],
@@ -231,6 +253,32 @@ def execute_tool(
             "tool": "list_recent_runs",
             "count": len(items),
             "items": items
+        }
+
+    elif name == "list_recent_errors":
+        limit = min(
+            arguments.get("limit", 8),
+            20
+        )
+
+        errors = list_errors(
+            limit=limit
+        )
+
+        result = {
+            "tool": "list_recent_errors",
+            "count": len(errors),
+            "items": [
+                {
+                    "id": item["id"],
+                    "run_id": item["run_id"],
+                    "agent_name": item["agent_name"],
+                    "task": item["task"],
+                    "error_message": item["error_message"],
+                    "created_at": item["created_at"]
+                }
+                for item in errors
+            ]
         }
 
     elif name == "inspect_project_state":
