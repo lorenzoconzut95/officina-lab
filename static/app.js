@@ -800,6 +800,24 @@ async function generateIncidentCaseStudy(incidentId, card) {
   const pre = document.createElement("pre");
   pre.textContent = result.markdown;
 
+  const downloadButton = document.createElement("button");
+  downloadButton.type = "button";
+  downloadButton.textContent = "Download Markdown";
+  downloadButton.addEventListener("click", () => {
+    const blob = new Blob(
+      [result.markdown],
+      { type:"text/markdown;charset=utf-8" }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = result.filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  });
+
   const copyButton = document.createElement("button");
   copyButton.type = "button";
   copyButton.textContent = "Copy Markdown";
@@ -815,6 +833,7 @@ async function generateIncidentCaseStudy(incidentId, card) {
   });
 
   box.appendChild(title);
+  box.appendChild(downloadButton);
   box.appendChild(copyButton);
   box.appendChild(pre);
   card.appendChild(box);
