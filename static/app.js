@@ -1172,12 +1172,56 @@ async function startRun() {
   ]);
 }
 
+function estimateRunDurationSeconds(runId) {
+  const run = allRuns.find(item => item.id === runId);
+  if (!run) return null;
+
+  const samples = allRuns
+    .filter(item =>
+      item.agent_name === run.agent_name &&
+      item.status === "completed" &&
+      Number.isFinite(item.duration_seconds) &&
+      item.duration_seconds > 0
+    )
+    .map(item => item.duration_seconds)
+    .sort((a, b) => a - b);
+
+  if (!samples.length) return null;
+
+  const middle = Math.floor(samples.length / 2);
+
+  return samples.length % 2
+    ? samples[middle]
+    : Math.round((samples[middle - 1] + samples[middle]) / 2);
+}
+
 async function executeRun(id, button = null) {
   const originalLabel = button ? button.textContent : null;
+  const estimatedSeconds = estimateRunDurationSeconds(id);
+  const startedAt = Date.now();
+  let timerId = null;
+
+  const updateButtonTimer = () => {
+    if (!button) return;
+
+    const elapsed = Math.max(
+      0,
+      Math.floor((Date.now() - startedAt) / 1000)
+    );
+
+    button.textContent =
+      "Executing… " + elapsed + "s" +
+      (
+        estimatedSeconds
+          ? " · stima ~" + estimatedSeconds + "s"
+          : " · stima n/d"
+      );
+  };
 
   if (button) {
     button.disabled = true;
-    button.textContent = "Executing...";
+    updateButtonTimer();
+    timerId = setInterval(updateButtonTimer, 1000);
   }
 
   try {
@@ -1224,6 +1268,10 @@ async function executeRun(id, button = null) {
       id + ": " + error.message
     );
   } finally {
+    if (timerId) {
+      clearInterval(timerId);
+    }
+
     if (button) {
       button.disabled = false;
       button.textContent = originalLabel || "Execute";
