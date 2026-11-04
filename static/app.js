@@ -806,6 +806,17 @@ async function viewIncidentReport(incidentId, card) {
     "Task: " + report.latest_error.task + "\n" +
     "Message:\n" + report.latest_error.message + "\n";
 
+  const structured = report.structured_analysis || {};
+
+  text +=
+    "\nSTRUCTURED ANALYSIS\n" +
+    "Symptom: " + (structured.symptom || "n/a") + "\n" +
+    "Evidence: " + (structured.evidence || "n/a") + "\n" +
+    "Root cause: " + (structured.root_cause || "n/a") + "\n" +
+    "Confidence: " + (structured.confidence || "n/a") + "\n" +
+    "Minimal test: " + (structured.minimal_test || "n/a") + "\n" +
+    "Smallest fix: " + (structured.smallest_fix || "n/a") + "\n";
+
   if (analysis) {
     text +=
       "\nBUG HUNTER ANALYSIS\n" +
