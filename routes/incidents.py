@@ -4,7 +4,8 @@ from services.incidents import (
     list_incidents,
     update_incident_status,
     link_analysis_run,
-    get_incident_report
+    get_incident_report,
+    build_incident_case_study
 )
 
 
@@ -78,3 +79,19 @@ def read_incident_report(incident_id: int):
         )
 
     return report
+
+
+
+@router.get("/{incident_id}/case-study")
+def read_incident_case_study(incident_id: int):
+    case_study = build_incident_case_study(
+        incident_id
+    )
+
+    if case_study is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    return case_study
