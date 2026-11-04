@@ -5,7 +5,8 @@ from services.incidents import (
     update_incident_status,
     link_analysis_run,
     get_incident_report,
-    build_incident_case_study
+    build_incident_case_study,
+    create_builder_handoff_for_incident
 )
 
 
@@ -95,3 +96,31 @@ def read_incident_case_study(incident_id: int):
         )
 
     return case_study
+
+
+
+@router.post("/{incident_id}/handoff-builder", status_code=201)
+def handoff_incident_to_builder(incident_id: int):
+    run = create_builder_handoff_for_incident(
+        incident_id
+    )
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    if run.get("error") == "analysis_not_completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Bug Hunter analysis must be completed before handoff"
+        )
+
+    if run.get("error") == "builder_not_found":
+        raise HTTPException(
+            status_code=404,
+            detail="Builder agent not found"
+        )
+
+    return run
