@@ -10,6 +10,39 @@ let incidentFilter = "open";
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
+function switchDashboardView(viewName) {
+  document.querySelectorAll(".dashboard-view").forEach(view => {
+    view.classList.toggle(
+      "active",
+      view.dataset.view === viewName
+    );
+  });
+
+  document.querySelectorAll("[data-view-target]").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.viewTarget === viewName
+    );
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function updateIncidentNavBadge(items) {
+  const badge = document.getElementById("nav-incident-badge");
+  if (!badge) return;
+
+  const active = items.filter(
+    item => item.status !== "resolved"
+  ).length;
+
+  badge.textContent = active;
+  badge.classList.toggle("empty", active === 0);
+}
+
 function updateStats(tasks) {
   const total = tasks.length;
   const done = tasks.filter(t => t.status === "done").length;
@@ -576,6 +609,7 @@ async function loadApprovals() {
 async function loadIncidents() {
   const r = await fetch("/api/incidents?limit=50");
   allIncidents = await r.json();
+  updateIncidentNavBadge(allIncidents);
   renderIncidents(allIncidents);
 }
 
