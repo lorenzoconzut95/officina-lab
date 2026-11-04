@@ -103,6 +103,30 @@ def tools_after_calls(tools_used):
     ]
 
 
+def role_instructions(agent):
+    identity = (
+        agent["name"] + " " + agent["role"]
+    ).lower()
+
+    if (
+        "bug hunter" in identity
+        or "debug" in identity
+        or "qa" in identity
+    ):
+        return (
+            "BUG HUNTER MODE: "
+            "Prefer list_recent_errors when investigating failures. "
+            "Separate observed evidence from hypotheses. "
+            "Do not claim a root cause unless evidence supports it. "
+            "For each relevant failure, return: symptom, evidence, "
+            "likely cause, confidence, minimal reproduction/test, "
+            "and smallest proposed fix. "
+            "Do not modify protected data without approval. "
+        )
+
+    return ""
+
+
 def run_llm(agent, task, context_package):
     client = OpenAI()
 
@@ -119,7 +143,9 @@ def run_llm(agent, task, context_package):
         "If a write tool returns approval_required, clearly tell the user "
         "that the action is only proposed and has NOT happened yet. "
         "Never claim you used a tool if you did not call it. "
-        "Return a useful result and a clear next action.\n\n"
+        "Return a useful result and a clear next action. "
+        + role_instructions(agent)
+        + "\n\n"
         + context_package["text"]
     )
 
