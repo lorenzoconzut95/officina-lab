@@ -150,3 +150,30 @@ http://127.0.0.1:8000/docs
 5. Handoff to Builder.
 6. Confirm Builder no longer proposes already-completed work.
 7. Update this state file.
+
+
+## Checkpoint 2026-11-04 — Bug Hunter v1
+
+Implemented:
+- Bug Hunter specialized role instructions.
+- Read-only tool: list_recent_errors.
+- Read-only tool: list_project_files.
+- Read-only tool: read_project_file.
+- Project file inspection excludes secrets, SQLite DB, .git, virtualenvs and path traversal.
+- Regression tests added for Bug Hunter behavior.
+- Regression tests added for safe project-file inspection.
+
+Current Bug Hunter capability:
+- Read recent errors.
+- Separate evidence from hypotheses.
+- Propose likely cause, confidence, minimal reproduction/test and smallest fix.
+- Inspect source/test files to verify whether a fix or regression test is actually implemented.
+- No protected writes without approval.
+
+Next verification:
+1. Pull latest main.
+2. Run:
+   python3 -m unittest tests/test_bug_hunter.py tests/test_project_file_tools.py
+3. Launch Bug Hunter with:
+   "Verifica se il controllo dei placeholder OPENAI_API_KEY è già implementato e coperto da test automatici. Usa list_project_files e read_project_file per ispezionare il codice e i test. Distingui chiaramente: errori storici, implementazione presente, test presenti, verifica end-to-end ancora mancante. Non modificare nulla senza approval."
+4. Confirm it cites evidence from services/llm_provider.py and tests/test_api_key_config.py.
