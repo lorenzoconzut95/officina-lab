@@ -132,6 +132,7 @@ def init_db():
     """)
 
     ensure_column(cursor, "incidents", "analysis_run_id", "INTEGER")
+    ensure_column(cursor, "incidents", "builder_run_id", "INTEGER")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
