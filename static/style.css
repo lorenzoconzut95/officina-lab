@@ -73,3 +73,27 @@ body{background:#0c0c0d}
   .view-heading h2{font-size:27px}
   #projects,#agents,#runs,#memories,#approvals,#incidents,#error-log,#tool-calls{grid-template-columns:1fr}
 }
+
+
+/* Incident Center compact cards */
+.incident-card{padding:15px}
+.incident-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.incident-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.incident-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border:1px solid #3a3a3d}
+.incident-badge.status-open{color:#ff7b72}
+.incident-badge.status-investigating{color:#ffbd2e}
+.incident-badge.status-resolved{color:#28c840}
+.incident-badge.severity-high{background:#2a1717}
+.incident-badge.severity-medium{background:#2a2415}
+.incident-badge.severity-low{background:#16251a}
+.incident-preview{margin-top:11px;color:#c6c6c6;font-size:13px;line-height:1.45}
+.incident-pipeline{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.incident-pipeline span{background:#111214;border:1px solid #2d2d30;border-radius:7px;padding:6px 8px;font-size:11px;color:#8f8f8f}
+.incident-primary-actions,.incident-secondary-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.incident-primary-actions button,.incident-secondary-actions button{padding:8px 10px;border-radius:8px;border:1px solid #3d3d40;background:#202023;color:#eee;cursor:pointer}
+.incident-primary-actions button:first-child{background:#ececec;color:#111;border-color:#ececec}
+.incident-details{margin-top:10px;border-top:1px solid #2b2b2d;padding-top:9px}
+.incident-details summary{cursor:pointer;color:#8d8d8d;font-size:12px}
+.incident-details-body{display:grid;gap:8px;margin-top:10px;color:#9a9a9a;font-size:12px;line-height:1.45}
+#incidents{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){#incidents{grid-template-columns:1fr}}
