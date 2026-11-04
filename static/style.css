@@ -209,3 +209,8 @@ body{background:#0c0c0d}
   .incident-timeline-step{grid-template-columns:20px 1fr;justify-items:start;text-align:left;align-items:center;min-width:0}
   .incident-timeline-connector{width:2px;height:16px;min-width:0;margin:0 0 0 8px}
 }
+
+
+.incident-technical-context{margin-top:8px;border:1px solid #29292c;border-radius:8px;background:#101113}
+.incident-technical-context summary{cursor:pointer;padding:9px 10px;color:#7e7f83;font-size:11px}
+.incident-technical-context pre{margin:0;padding:10px;border-top:1px solid #29292c;white-space:pre-wrap;overflow:auto;font-size:10px;color:#777}
