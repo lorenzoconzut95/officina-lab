@@ -294,6 +294,47 @@ function renderApprovals(approvals) {
   }
 }
 
+function getVerificationState(run) {
+  if (!run) {
+    return {
+      key: "not_started",
+      label: "Verification not started",
+      ready: false
+    };
+  }
+
+  if (run.status === "running") {
+    return {
+      key: "running",
+      label: "Verification running",
+      ready: false
+    };
+  }
+
+  if (run.status !== "completed") {
+    return {
+      key: "needs_action",
+      label: "Verification failed",
+      ready: false
+    };
+  }
+
+  const output = run.output || "";
+  const verified = /^SMALLEST_FIX:\s*VERIFIED\b/im.test(output);
+
+  return verified
+    ? {
+        key: "ready",
+        label: "Ready to resolve",
+        ready: true
+      }
+    : {
+        key: "needs_action",
+        label: "Needs action",
+        ready: false
+      };
+}
+
 function renderIncidents(items) {
   const c = document.getElementById("incidents");
   const visibleItems = incidentFilter === "all"
@@ -358,6 +399,26 @@ function renderIncidents(items) {
     const verificationRun = item.verification_run_id
       ? allRuns.find(run => run.id === item.verification_run_id)
       : null;
+
+    const verificationState = getVerificationState(verificationRun);
+
+    const recommendation = document.createElement("div");
+    recommendation.className =
+      "incident-recommendation " + verificationState.key;
+    recommendation.innerHTML =
+      '<span class="incident-recommendation-dot"></span>' +
+      '<strong>' + verificationState.label + '</strong>';
+
+    if (
+      verificationRun &&
+      verificationRun.status === "completed" &&
+      !verificationState.ready
+    ) {
+      recommendation.innerHTML +=
+        '<span>Review verification output before resolving.</span>';
+    }
+
+    card.appendChild(recommendation);
 
     const pipeline = document.createElement("div");
     pipeline.className = "incident-pipeline";
@@ -438,8 +499,24 @@ function renderIncidents(items) {
     if (item.status !== "resolved") {
       const resolveButton = document.createElement("button");
       resolveButton.type = "button";
-      resolveButton.textContent = "Resolve";
+      resolveButton.textContent = verificationState.ready
+        ? "Resolve incident"
+        : "Resolve";
+      resolveButton.className = verificationState.ready
+        ? "resolve-ready"
+        : "";
       resolveButton.addEventListener("click", () => {
+        if (
+          !verificationState.ready &&
+          verificationRun &&
+          verificationRun.status === "completed"
+        ) {
+          const proceed = confirm(
+            "Verification does not mark this incident as VERIFIED. Resolve anyway?"
+          );
+          if (!proceed) return;
+        }
+
         setIncidentStatus(item.id, "resolved");
       });
       actions.appendChild(resolveButton);
@@ -1259,10 +1336,13 @@ async function viewIncidentReport(incidentId, card) {
       ? "Approval #" + approval.id + " · " + approval.status + "\n"
       : "Not requested\n");
 
+  const verificationState = getVerificationState(verificationRun);
+
   text +=
     "\nVERIFICATION\n" +
     (verificationRun
       ? "Run #" + verificationRun.run_id + " · " + verificationRun.status + "\n" +
+        "Verification recommendation: " + verificationState.label + "\n" +
         (verificationRun.output || "No output yet.") + "\n"
       : "Not started\n");
 
