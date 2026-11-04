@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException
 from services.incidents import (
     list_incidents,
     update_incident_status,
-    link_analysis_run
+    link_analysis_run,
+    get_incident_report
 )
 
 
@@ -61,3 +62,19 @@ def attach_analysis_run(
         )
 
     return incident
+
+
+
+@router.get("/{incident_id}/report")
+def read_incident_report(incident_id: int):
+    report = get_incident_report(
+        incident_id
+    )
+
+    if report is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Incident not found"
+        )
+
+    return report
