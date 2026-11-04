@@ -227,6 +227,31 @@ function renderIncidents(items) {
       item.latest_error_message +
       '</div>';
 
+    if (item.analysis_run_id) {
+      const analysisRun = allRuns.find(
+        run => run.id === item.analysis_run_id
+      );
+
+      const analysisBox = document.createElement("div");
+      analysisBox.className = "incident-analysis";
+
+      if (analysisRun) {
+        const outputPreview = analysisRun.output
+          ? analysisRun.output.slice(0, 500)
+          : "Nessun output ancora.";
+
+        analysisBox.textContent =
+          "Analysis run #" + analysisRun.id +
+          " · " + analysisRun.status +
+          "\n" + outputPreview;
+      } else {
+        analysisBox.textContent =
+          "Analysis run #" + item.analysis_run_id;
+      }
+
+      card.appendChild(analysisBox);
+    }
+
     const actions = document.createElement("div");
     actions.className = "run-actions";
 
@@ -843,6 +868,18 @@ async function analyzeIncidentWithBugHunter(incidentId) {
 
   if (!r.ok) {
     return alert("Errore nella creazione del run Bug Hunter");
+  }
+
+  const createdRun = await r.json();
+
+  const linkResponse = await fetch(
+    "/api/incidents/" + incidentId +
+    "/analysis-run?run_id=" + encodeURIComponent(createdRun.id),
+    { method:"PATCH" }
+  );
+
+  if (!linkResponse.ok) {
+    return alert("Run creato, ma collegamento all'incidente fallito");
   }
 
   await Promise.all([
