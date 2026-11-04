@@ -280,6 +280,23 @@ function renderIncidents(items) {
     });
     actions.appendChild(reportButton);
 
+    const linkedAnalysis = item.analysis_run_id
+      ? allRuns.find(run => run.id === item.analysis_run_id)
+      : null;
+
+    if (
+      linkedAnalysis &&
+      linkedAnalysis.status === "completed"
+    ) {
+      const handoffButton = document.createElement("button");
+      handoffButton.type = "button";
+      handoffButton.textContent = "Handoff to Builder";
+      handoffButton.addEventListener("click", () => {
+        handoffIncidentToBuilder(item.id);
+      });
+      actions.appendChild(handoffButton);
+    }
+
     if (item.status !== "investigating") {
       const investigatingButton = document.createElement("button");
       investigatingButton.type = "button";
@@ -769,6 +786,26 @@ async function executeRun(id) {
     loadAgents(),
     loadIncidents(),
     loadErrors()
+  ]);
+}
+
+async function handoffIncidentToBuilder(incidentId) {
+  const r = await fetch(
+    "/api/incidents/" + incidentId + "/handoff-builder",
+    { method:"POST" }
+  );
+
+  if (!r.ok) {
+    const error = await r.json();
+    return alert(
+      "Errore nell'handoff a Builder: " +
+      (error.detail || "errore sconosciuto")
+    );
+  }
+
+  await Promise.all([
+    loadRuns(),
+    loadAgents()
   ]);
 }
 
