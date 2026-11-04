@@ -148,6 +148,25 @@ def role_instructions(agent):
     return ""
 
 
+def task_instructions(task):
+    normalized = (task or "").strip().upper()
+
+    if normalized.startswith(
+        "VERIFY INCIDENT AFTER APPROVED BUILDER PROPOSAL"
+    ):
+        return (
+            "VERIFICATION MODE OVERRIDE: "
+            "For this task, ignore the normal Bug Hunter output labels. "
+            "Return exactly these labeled sections, each on its own line: "
+            "VERDICT:, EVIDENCE:, TEST_PERFORMED:, RESIDUAL_RISK:, NEXT_ACTION:. "
+            "VERDICT must be exactly verified or not_verified. "
+            "Use verified only when current evidence supports closure. "
+            "Do not assume the approved proposal was implemented. "
+        )
+
+    return ""
+
+
 def run_llm(agent, task, context_package):
     client = OpenAI()
 
@@ -166,6 +185,7 @@ def run_llm(agent, task, context_package):
         "Never claim you used a tool if you did not call it. "
         "Return a useful result and a clear next action. "
         + role_instructions(agent)
+        + task_instructions(task)
         + "\n\n"
         + context_package["text"]
     )
