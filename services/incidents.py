@@ -6,13 +6,17 @@ from repositories.incidents import (
     refresh_incident,
     update_incident_status as repo_update_incident_status,
     link_analysis_run as repo_link_analysis_run,
-    link_builder_run as repo_link_builder_run
+    link_builder_run as repo_link_builder_run,
+    link_approval as repo_link_approval,
+    link_verification_run as repo_link_verification_run
 )
 from services.errors import list_incidents as derive_incidents
 from repositories.runs import get_run as repo_get_run
 from services.agents import list_agents
 from services.project_state import build_project_state
 from services.runs import create_run
+from services.approvals import create_approval
+from repositories.approvals import get_approval as repo_get_approval
 
 
 ALLOWED_STATUSES = {
@@ -230,6 +234,8 @@ def get_incident_report(incident_id):
 
     analysis_run = None
     builder_run = None
+    approval = None
+    verification_run = None
 
     if incident["analysis_run_id"]:
         analysis_run = repo_get_run(
@@ -240,6 +246,12 @@ def get_incident_report(incident_id):
         builder_run = repo_get_run(
             incident["builder_run_id"]
         )
+
+    if incident["approval_id"]:
+        approval = repo_get_approval(incident["approval_id"])
+
+    if incident["verification_run_id"]:
+        verification_run = repo_get_run(incident["verification_run_id"])
 
     structured_analysis = parse_structured_analysis(
         analysis_run["output"] if analysis_run else None
@@ -263,6 +275,20 @@ def get_incident_report(incident_id):
         },
         "structured_analysis": structured_analysis,
         "builder_proposal": builder_proposal,
+        "approval": approval,
+        "verification_run": (
+            {
+                "run_id": verification_run["id"],
+                "status": verification_run["status"],
+                "agent_name": verification_run["agent_name"],
+                "model": verification_run["model"],
+                "output": verification_run["output"],
+                "started_at": verification_run["started_at"],
+                "ended_at": verification_run["ended_at"]
+            }
+            if verification_run
+            else None
+        ),
         "builder_run": (
             {
                 "run_id": builder_run["id"],
@@ -474,3 +500,106 @@ def create_builder_handoff_for_incident(incident_id):
     )
 
     return builder_run
+
+
+
+def create_incident_proposal_approval(incident_id):
+    report = get_incident_report(incident_id)
+
+    if report is None:
+        return None
+
+    builder_run = report["builder_run"]
+    proposal = report["builder_proposal"]
+
+    if builder_run is None or builder_run["status"] != "completed":
+        return {"error": "builder_not_completed"}
+
+    if not proposal.get("action_type"):
+        return {"error": "proposal_not_structured"}
+
+    if report["approval"] is not None:
+        return report["approval"]
+
+    approval = create_approval(
+        "incident_builder_proposal",
+        {
+            "incident_id": report["incident_id"],
+            "incident_key": report["incident_key"],
+            "action_type": proposal.get("action_type"),
+            "target": proposal.get("target"),
+            "rationale": proposal.get("rationale"),
+            "change": proposal.get("change"),
+            "test": proposal.get("test"),
+            "risk": proposal.get("risk"),
+            "approval_needed": proposal.get("approval_needed")
+        },
+        builder_run["agent_name"],
+        builder_run["run_id"]
+    )
+
+    repo_link_approval(
+        incident_id,
+        approval["id"]
+    )
+
+    return approval
+
+
+def create_incident_verification_run(incident_id):
+    report = get_incident_report(incident_id)
+
+    if report is None:
+        return None
+
+    approval = report["approval"]
+
+    if approval is None or approval["status"] != "approved":
+        return {"error": "approval_required"}
+
+    bug_hunters = [
+        agent
+        for agent in list_agents()
+        if (
+            "bug hunter" in agent["name"].lower()
+            or "debug" in agent["role"].lower()
+        )
+    ]
+
+    if not bug_hunters:
+        return {"error": "bug_hunter_not_found"}
+
+    bug_hunter = bug_hunters[0]
+    proposal = report["builder_proposal"]
+
+    task = (
+        "VERIFY INCIDENT AFTER APPROVED BUILDER PROPOSAL\n\n"
+        "Incident #" + str(report["incident_id"]) + "\n"
+        "Key: " + report["incident_key"] + "\n"
+        "Current status: " + report["status"] + "\n\n"
+        "Approved proposal:\n"
+        "ACTION_TYPE: " + str(proposal.get("action_type") or "n/a") + "\n"
+        "TARGET: " + str(proposal.get("target") or "n/a") + "\n"
+        "CHANGE: " + str(proposal.get("change") or "n/a") + "\n"
+        "TEST: " + str(proposal.get("test") or "n/a") + "\n"
+        "RISK: " + str(proposal.get("risk") or "n/a") + "\n\n"
+        "Verification instruction:\n"
+        "Inspect current Officina evidence and determine whether the approved "
+        "proposal has actually been satisfied. Do not assume implementation. "
+        "Use project files, recent errors, runs, and state when useful. "
+        "Return exactly: SYMPTOM:, EVIDENCE:, ROOT_CAUSE:, CONFIDENCE:, "
+        "MINIMAL_TEST:, SMALLEST_FIX:. In SMALLEST_FIX state either VERIFIED "
+        "if evidence supports closure, or the smallest remaining action."
+    )
+
+    run = create_run(
+        bug_hunter["id"],
+        task
+    )
+
+    repo_link_verification_run(
+        incident_id,
+        run["id"]
+    )
+
+    return run
