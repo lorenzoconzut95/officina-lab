@@ -181,6 +181,7 @@ function renderMemories(memories) {
 function renderApprovals(approvals) {
   const c = document.getElementById("approvals");
   const pending = approvals.filter(a => a.status === "pending");
+  const resolved = approvals.filter(a => a.status !== "pending");
 
   document.getElementById("approval-count").textContent =
     pending.length + " pending";
@@ -188,41 +189,109 @@ function renderApprovals(approvals) {
   c.innerHTML = "";
 
   if (!approvals.length) {
-    c.innerHTML = "<p>Nessuna approval richiesta.</p>";
+    c.innerHTML =
+      '<div class="approval-empty">No approvals waiting. Officina will place protected actions here.</div>';
     return;
   }
 
-  approvals.forEach(a => {
-    const card = document.createElement("div");
-    card.className = "approval-card";
+  pending.forEach(a => {
+    const card = document.createElement("article");
+    card.className = "approval-card approval-card-pending";
 
-    const payload = JSON.stringify(
-      a.payload,
-      null,
-      2
-    );
+    const p = a.payload || {};
+    const isIncidentProposal = a.action === "incident_builder_proposal";
 
-    let actions = "";
-
-    if (a.status === "pending") {
-      actions =
-        '<div class="approval-actions">' +
-        '<button onclick="approveRequest(' + a.id + ')">Approve</button>' +
-        '<button onclick="rejectRequest(' + a.id + ')">Reject</button>' +
-        '</div>';
+    if (isIncidentProposal) {
+      card.innerHTML =
+        '<div class="approval-card-top">' +
+          '<div>' +
+            '<span class="eyebrow">Decision required</span>' +
+            '<div class="approval-title">Incident #' +
+              (p.incident_id ?? "—") + ' · ' +
+              (p.incident_key || "Builder proposal") +
+            '</div>' +
+          '</div>' +
+          '<span class="approval-status pending">pending</span>' +
+        '</div>' +
+        '<div class="approval-summary-grid">' +
+          '<div><span>Action</span><strong>' + (p.action_type || "n/a") + '</strong></div>' +
+          '<div><span>Risk</span><strong>' + (p.risk || "n/a") + '</strong></div>' +
+          '<div><span>Agent</span><strong>' + a.agent_name + '</strong></div>' +
+          '<div><span>Run</span><strong>#' + (a.run_id || "—") + '</strong></div>' +
+        '</div>' +
+        '<div class="approval-block"><span>Target</span><p>' +
+          (p.target || "Not specified") + '</p></div>' +
+        '<div class="approval-block"><span>Why</span><p>' +
+          (p.rationale || "Not specified") + '</p></div>' +
+        '<div class="approval-block"><span>Proposed change</span><p>' +
+          (p.change || "Not specified") + '</p></div>' +
+        '<div class="approval-block"><span>Verification test</span><p>' +
+          (p.test || "Not specified") + '</p></div>';
+    } else {
+      card.innerHTML =
+        '<div class="approval-card-top">' +
+          '<div>' +
+            '<span class="eyebrow">Decision required</span>' +
+            '<div class="approval-title">' + a.action + '</div>' +
+          '</div>' +
+          '<span class="approval-status pending">pending</span>' +
+        '</div>' +
+        '<div class="approval-meta">Agent: ' + a.agent_name +
+          (a.run_id ? ' · Run #' + a.run_id : '') +
+          ' · ' + a.created_at + '</div>' +
+        '<details class="approval-raw">' +
+          '<summary>Payload</summary>' +
+          '<pre>' + JSON.stringify(p, null, 2) + '</pre>' +
+        '</details>';
     }
 
-    card.innerHTML =
-      '<div class="approval-title">' + a.action + '</div>' +
-      '<div class="approval-meta">Agent: ' + a.agent_name +
-      (a.run_id ? ' · Run: ' + a.run_id : '') +
-      '<br>Created: ' + a.created_at + '</div>' +
-      '<div class="approval-payload">' + payload + '</div>' +
-      '<span class="approval-status ' + a.status + '">' + a.status + '</span>' +
-      actions;
+    const actions = document.createElement("div");
+    actions.className = "approval-actions";
 
+    const approveButton = document.createElement("button");
+    approveButton.type = "button";
+    approveButton.className = "approval-approve";
+    approveButton.textContent = "Approve";
+    approveButton.addEventListener("click", () => approveRequest(a.id));
+
+    const rejectButton = document.createElement("button");
+    rejectButton.type = "button";
+    rejectButton.className = "approval-reject";
+    rejectButton.textContent = "Reject";
+    rejectButton.addEventListener("click", () => rejectRequest(a.id));
+
+    actions.appendChild(approveButton);
+    actions.appendChild(rejectButton);
+    card.appendChild(actions);
     c.appendChild(card);
   });
+
+  if (resolved.length) {
+    const history = document.createElement("details");
+    history.className = "approval-history";
+
+    const summary = document.createElement("summary");
+    summary.textContent = "Decision history · " + resolved.length;
+    history.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "approval-history-list";
+
+    resolved.slice(0, 12).forEach(a => {
+      const item = document.createElement("div");
+      item.className = "approval-history-item";
+      item.innerHTML =
+        '<div><strong>' + a.action + '</strong>' +
+        '<span>' + a.agent_name +
+        (a.run_id ? ' · Run #' + a.run_id : '') +
+        '</span></div>' +
+        '<span class="approval-status ' + a.status + '">' + a.status + '</span>';
+      body.appendChild(item);
+    });
+
+    history.appendChild(body);
+    c.appendChild(history);
+  }
 }
 
 function renderIncidents(items) {
