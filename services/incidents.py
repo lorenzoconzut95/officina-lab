@@ -208,3 +208,95 @@ def get_incident_report(incident_id):
         "updated_at": incident["updated_at"],
         "resolved_at": incident["resolved_at"]
     }
+
+
+
+def build_incident_case_study(incident_id):
+    report = get_incident_report(
+        incident_id
+    )
+
+    if report is None:
+        return None
+
+    structured = report["structured_analysis"]
+    analysis = report["analysis"]
+
+    def value(name):
+        return structured.get(name) or "Not available"
+
+    lines = [
+        "# Incident Case Study — " + report["incident_key"],
+        "",
+        "**Incident ID:** " + str(report["incident_id"]),
+        "**Status:** " + report["status"],
+        "**Severity:** " + report["severity"],
+        "**Occurrences:** " + str(report["occurrences"]),
+        "",
+        "## Problem",
+        "",
+        value("symptom"),
+        "",
+        "## Evidence",
+        "",
+        value("evidence"),
+        "",
+        "## Root cause",
+        "",
+        value("root_cause"),
+        "",
+        "## Confidence",
+        "",
+        value("confidence"),
+        "",
+        "## Minimal test",
+        "",
+        value("minimal_test"),
+        "",
+        "## Smallest fix",
+        "",
+        value("smallest_fix"),
+        "",
+        "## Latest error",
+        "",
+        "Run #" + str(report["latest_error"]["run_id"])
+        + " · Agent: " + str(report["latest_error"]["agent_name"]),
+        "",
+        report["latest_error"]["message"],
+        "",
+        "## Bug Hunter analysis",
+        ""
+    ]
+
+    if analysis:
+        lines.extend([
+            "Run #" + str(analysis["run_id"])
+            + " · " + str(analysis["status"]),
+            "",
+            "Model: " + str(analysis["model"] or "n/a"),
+            "",
+            analysis["output"] or "No output available."
+        ])
+    else:
+        lines.append("No Bug Hunter analysis linked.")
+
+    lines.extend([
+        "",
+        "## Lifecycle",
+        "",
+        "Created: " + str(report["created_at"]),
+        "Updated: " + str(report["updated_at"]),
+        "Resolved: " + str(report["resolved_at"] or "not resolved"),
+        ""
+    ])
+
+    return {
+        "filename": (
+            "incident-"
+            + str(report["incident_id"])
+            + "-"
+            + report["incident_key"]
+            + ".md"
+        ),
+        "markdown": "\n".join(lines)
+    }
