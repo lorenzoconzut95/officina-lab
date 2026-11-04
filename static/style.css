@@ -132,3 +132,31 @@ body{background:#0c0c0d}
   .run-detail-grid{grid-template-columns:repeat(2,1fr)}
   .run-toolbar{grid-template-columns:1fr}
 }
+
+
+/* Approval decision cards */
+#approvals{display:block}
+.approval-empty{padding:16px;border:1px dashed #343438;border-radius:10px;color:#777;text-align:center}
+.approval-card-pending{margin-bottom:12px}
+.approval-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.approval-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.approval-summary-grid>div{background:#111214;border:1px solid #2e2e31;border-radius:8px;padding:9px}
+.approval-summary-grid span,.approval-block span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#747478;margin-bottom:5px}
+.approval-summary-grid strong{font-size:12px}
+.approval-block{margin-top:10px;background:#111214;border:1px solid #2e2e31;border-radius:8px;padding:10px}
+.approval-block p{margin:0;color:#d0d0d0;font-size:12px;line-height:1.5}
+.approval-actions{display:flex;gap:8px;margin-top:12px}
+.approval-actions button{margin:0}
+.approval-approve{background:#e9e9e9;color:#111;border-color:#e9e9e9}
+.approval-reject{background:#261717;color:#ff8a84;border-color:#4a2929}
+.approval-raw{margin-top:10px;color:#8d8d8d;font-size:12px}
+.approval-raw pre{white-space:pre-wrap;background:#101011;border-radius:8px;padding:10px;overflow:auto}
+.approval-history{margin-top:14px;border-top:1px solid #2b2b2e;padding-top:10px}
+.approval-history summary{cursor:pointer;color:#858589;font-size:12px}
+.approval-history-list{display:grid;gap:7px;margin-top:9px}
+.approval-history-item{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#111214;border:1px solid #29292c;border-radius:8px;padding:9px 10px}
+.approval-history-item div{display:grid;gap:3px}
+.approval-history-item div span{font-size:11px;color:#747478}
+@media(max-width:760px){
+  .approval-summary-grid{grid-template-columns:repeat(2,1fr)}
+}
