@@ -94,7 +94,8 @@ def tools_after_calls(tools_used):
     redundant = {
         "list_tasks",
         "list_memories",
-        "list_recent_runs"
+        "list_recent_runs",
+        "list_recent_errors"
     }
 
     return [
