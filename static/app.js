@@ -349,6 +349,125 @@ function getVerificationState(run, structuredResult = null) {
   };
 }
 
+function buildIncidentTimeline(item, analysisRun, builderRun, approval, verificationRun) {
+  const steps = [];
+
+  steps.push({
+    label: "Error",
+    state: "done",
+    meta: item.latest_run_id ? ("Run #" + item.latest_run_id) : ""
+  });
+
+  let analysisState = "pending";
+  if (analysisRun) {
+    analysisState =
+      analysisRun.status === "completed"
+        ? "done"
+        : analysisRun.status === "failed"
+          ? "failed"
+          : "active";
+  }
+
+  steps.push({
+    label: "Bug Hunter",
+    state: analysisState,
+    meta: analysisRun ? ("#" + analysisRun.id) : ""
+  });
+
+  let builderState = "pending";
+  if (builderRun) {
+    builderState =
+      builderRun.status === "completed"
+        ? "done"
+        : builderRun.status === "failed"
+          ? "failed"
+          : "active";
+  }
+
+  steps.push({
+    label: "Builder",
+    state: builderState,
+    meta: builderRun ? ("#" + builderRun.id) : ""
+  });
+
+  let approvalState = "pending";
+  if (approval) {
+    approvalState =
+      approval.status === "approved"
+        ? "done"
+        : approval.status === "rejected"
+          ? "failed"
+          : "active";
+  }
+
+  steps.push({
+    label: "Approval",
+    state: approvalState,
+    meta: approval ? ("#" + approval.id) : ""
+  });
+
+  let verificationState = "pending";
+  if (verificationRun) {
+    verificationState =
+      verificationRun.status === "completed"
+        ? "done"
+        : verificationRun.status === "failed"
+          ? "failed"
+          : "active";
+  }
+
+  steps.push({
+    label: "Verification",
+    state: verificationState,
+    meta: verificationRun ? ("#" + verificationRun.id) : ""
+  });
+
+  steps.push({
+    label: "Resolved",
+    state: item.status === "resolved" ? "done" : "pending",
+    meta: item.resolved_at || ""
+  });
+
+  return steps;
+}
+
+function renderIncidentTimeline(steps) {
+  const timeline = document.createElement("div");
+  timeline.className = "incident-timeline";
+
+  steps.forEach((step, index) => {
+    const item = document.createElement("div");
+    item.className = "incident-timeline-step " + step.state;
+
+    item.innerHTML =
+      '<div class="incident-timeline-marker">' +
+        '<span></span>' +
+      '</div>' +
+      '<div class="incident-timeline-content">' +
+        '<strong>' + step.label + '</strong>' +
+        (step.meta
+          ? '<small>' + step.meta + '</small>'
+          : '') +
+      '</div>';
+
+    timeline.appendChild(item);
+
+    if (index < steps.length - 1) {
+      const connector = document.createElement("div");
+      connector.className =
+        "incident-timeline-connector " +
+        (
+          step.state === "done"
+            ? "done"
+            : "pending"
+        );
+      timeline.appendChild(connector);
+    }
+  });
+
+  return timeline;
+}
+
 function renderIncidents(items) {
   const c = document.getElementById("incidents");
   const visibleItems = incidentFilter === "all"
