@@ -803,6 +803,20 @@ async function analyzeIncidentWithBugHunter(incidentId) {
     return alert("Crea prima l'agente Bug Hunter");
   }
 
+  if (incident.status !== "investigating") {
+    const statusResponse = await fetch(
+      "/api/incidents/" + incidentId +
+      "/status?status=investigating",
+      { method:"PATCH" }
+    );
+
+    if (!statusResponse.ok) {
+      return alert("Errore nel passaggio dell'incidente a investigating");
+    }
+
+    incident.status = "investigating";
+  }
+
   const task =
     "Analizza questo incidente reale di Officina Lab.\n\n" +
     "Incident key: " + incident.incident_key + "\n" +
@@ -833,7 +847,8 @@ async function analyzeIncidentWithBugHunter(incidentId) {
 
   await Promise.all([
     loadRuns(),
-    loadAgents()
+    loadAgents(),
+    loadIncidents()
   ]);
 }
 
