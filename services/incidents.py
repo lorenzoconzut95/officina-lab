@@ -9,6 +9,9 @@ from repositories.incidents import (
 )
 from services.errors import list_incidents as derive_incidents
 from repositories.runs import get_run as repo_get_run
+from services.agents import list_agents
+from services.project_state import build_project_state
+from services.runs import create_run
 
 
 ALLOWED_STATUSES = {
@@ -300,3 +303,82 @@ def build_incident_case_study(incident_id):
         ),
         "markdown": "\n".join(lines)
     }
+
+
+
+def create_builder_handoff_for_incident(incident_id):
+    report = get_incident_report(
+        incident_id
+    )
+
+    if report is None:
+        return None
+
+    analysis = report["analysis"]
+
+    if (
+        analysis is None
+        or analysis["status"] != "completed"
+    ):
+        return {
+            "error": "analysis_not_completed"
+        }
+
+    builders = [
+        agent
+        for agent in list_agents()
+        if agent["name"].lower() == "builder"
+    ]
+
+    if not builders:
+        return {
+            "error": "builder_not_found"
+        }
+
+    builder = builders[0]
+
+    fresh_state = build_project_state(
+        project=builder["project"],
+        limit=6
+    )
+
+    structured = report["structured_analysis"]
+
+    handoff_task = (
+        "INCIDENT HANDOFF TO BUILDER\n\n"
+        "Incident #" + str(report["incident_id"]) + "\n"
+        "Key: " + report["incident_key"] + "\n"
+        "Status: " + report["status"] + "\n"
+        "Severity: " + report["severity"] + "\n"
+        "Occurrences: " + str(report["occurrences"]) + "\n\n"
+        "Latest error:\n"
+        + report["latest_error"]["message"]
+        + "\n\n"
+        "Structured Bug Hunter analysis:\n"
+        "SYMPTOM: " + str(structured["symptom"] or "n/a") + "\n"
+        "EVIDENCE: " + str(structured["evidence"] or "n/a") + "\n"
+        "ROOT_CAUSE: " + str(structured["root_cause"] or "n/a") + "\n"
+        "CONFIDENCE: " + str(structured["confidence"] or "n/a") + "\n"
+        "MINIMAL_TEST: " + str(structured["minimal_test"] or "n/a") + "\n"
+        "SMALLEST_FIX: " + str(structured["smallest_fix"] or "n/a") + "\n\n"
+        "Full Bug Hunter output:\n"
+        + str(analysis["output"] or "")
+        + "\n\n"
+        "CURRENT PROJECT STATE SNAPSHOT:\n"
+        + __import__("json").dumps(
+            fresh_state,
+            ensure_ascii=False,
+            indent=2
+        )
+        + "\n\n"
+        "Builder instruction:\n"
+        "Propose the smallest safe technical change that addresses the incident. "
+        "Verify current code before proposing anything. "
+        "Do not claim a fix is implemented unless evidence supports it. "
+        "Do not modify protected data without approval."
+    )
+
+    return create_run(
+        builder["id"],
+        handoff_task
+    )
