@@ -4,170 +4,233 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=20">
+    <link rel="stylesheet" href="/static/style.css?v=21">
 </head>
 <body>
+    <header class="app-shell-header">
+        <div class="app-brand">
+            <div>
+                <h1>Officina Lab</h1>
+                <p class="subtitle">AI Control Tower</p>
+            </div>
+            <span class="app-status">local</span>
+        </div>
+
+        <nav class="main-nav" aria-label="Dashboard sections">
+            <button type="button" class="nav-button active" data-view-target="overview">Overview</button>
+            <button type="button" class="nav-button" data-view-target="incidents">
+                Incidents <span id="nav-incident-badge" class="nav-badge">0</span>
+            </button>
+            <button type="button" class="nav-button" data-view-target="agents">Agents</button>
+            <button type="button" class="nav-button" data-view-target="tasks">Tasks</button>
+            <button type="button" class="nav-button" data-view-target="audit">Audit</button>
+        </nav>
+    </header>
+
     <main class="container">
-        <h1>Officina Lab</h1>
-        <p class="subtitle">Control Tower</p>
-
-        <section class="next-action">
-            <span class="next-action-label">Next Best Action</span>
-            <strong id="next-action-title">Nessun task attivo</strong>
-            <span id="next-action-meta"></span>
-        </section>
-
-        <section class="stats">
-            <div class="stat-card"><span class="stat-label">Todo</span><strong id="todo-count">0</strong></div>
-            <div class="stat-card"><span class="stat-label">Done</span><strong id="done-count">0</strong></div>
-            <div class="stat-card"><span class="stat-label">Total</span><strong id="total-count">0</strong></div>
-        </section>
-
-        <section class="projects-section">
-            <div class="section-header">
-                <h2>Projects</h2>
-                <button id="clear-project-filter" type="button">Show all</button>
-            </div>
-            <div id="projects"></div>
-        </section>
-
-        <section class="agents-section">
-            <div class="section-header">
-                <h2>Agents</h2>
-                <span id="agent-count" class="muted">0 agents</span>
-            </div>
-            <div class="agent-form">
-                <input id="agent-name" type="text" placeholder="Agent name">
-                <input id="agent-role" type="text" placeholder="Role">
-                <input id="agent-goal" type="text" placeholder="Goal">
-                <input id="agent-project" type="text" value="Officina Lab">
-                <button id="create-agent-button">Create Agent</button>
-            </div>
-            <div id="agents"></div>
-        </section>
-
-        <section class="memory-section">
-            <div class="section-header">
-                <h2>Memory</h2>
-                <span id="memory-count" class="muted">0 memories</span>
-            </div>
-            <div class="memory-form">
-                <input id="memory-content" type="text" placeholder="What should Officina remember?">
-                <input id="memory-project" type="text" value="Officina Lab">
-                <select id="memory-type">
-                    <option value="decision">Decision</option>
-                    <option value="fact">Fact</option>
-                    <option value="note" selected>Note</option>
-                </select>
-                <button id="create-memory-button">Save Memory</button>
-            </div>
-            <div id="memories"></div>
-        </section>
-
-        <section class="approvals-section">
-            <div class="section-header">
-                <h2>Approvals</h2>
-                <span id="approval-count" class="muted">0 pending</span>
-            </div>
-            <div id="approvals"></div>
-        </section>
-
-        <section class="runs-section">
-            <div class="section-header">
-                <h2>Agent Runs</h2>
-                <span id="run-count" class="muted">0 runs</span>
+        <section class="dashboard-view active" data-view="overview">
+            <div class="view-heading">
+                <div>
+                    <span class="eyebrow">Command center</span>
+                    <h2>Overview</h2>
+                </div>
             </div>
 
-            <section class="run-stats">
-                <div class="stat-card"><span class="stat-label">Running</span><strong id="running-count">0</strong></div>
-                <div class="stat-card"><span class="stat-label">Completed</span><strong id="completed-count">0</strong></div>
-                <div class="stat-card"><span class="stat-label">Tokens</span><strong id="token-count">0</strong></div>
-                <div class="stat-card"><span class="stat-label">Cost</span><strong id="cost-total">$0.00</strong></div>
+            <section class="next-action">
+                <span class="next-action-label">Next Best Action</span>
+                <strong id="next-action-title">Nessun task attivo</strong>
+                <span id="next-action-meta"></span>
             </section>
 
-            <div class="run-form">
-                <select id="run-agent"></select>
-                <input id="run-task" type="text" placeholder="Run task">
-                <button id="start-run-button">Start Run</button>
+            <section class="stats">
+                <div class="stat-card"><span class="stat-label">Todo</span><strong id="todo-count">0</strong></div>
+                <div class="stat-card"><span class="stat-label">Done</span><strong id="done-count">0</strong></div>
+                <div class="stat-card"><span class="stat-label">Total</span><strong id="total-count">0</strong></div>
+            </section>
+
+            <section class="projects-section panel">
+                <div class="section-header">
+                    <div>
+                        <span class="eyebrow">Portfolio</span>
+                        <h2>Projects</h2>
+                    </div>
+                    <button id="clear-project-filter" type="button">Show all</button>
+                </div>
+                <div id="projects"></div>
+            </section>
+        </section>
+
+        <section class="dashboard-view" data-view="incidents">
+            <div class="view-heading">
+                <div>
+                    <span class="eyebrow">Operations</span>
+                    <h2>Incident Center</h2>
+                    <p>Detect → Diagnose → Handoff → Resolve</p>
+                </div>
             </div>
 
-            <div id="runs"></div>
+            <section class="incident-queue-section panel">
+                <div class="section-header">
+                    <div>
+                        <span class="eyebrow">Lifecycle</span>
+                        <h2>Incident Queue</h2>
+                    </div>
+                    <span id="incident-count" class="muted">0 incidents</span>
+                </div>
+                <div class="incident-filters">
+                    <button type="button" data-incident-filter="open">Open</button>
+                    <button type="button" data-incident-filter="investigating">Investigating</button>
+                    <button type="button" data-incident-filter="resolved">Resolved</button>
+                    <button type="button" data-incident-filter="all">All</button>
+                </div>
+                <div id="incidents"></div>
+            </section>
+
+            <details class="collapsible-panel">
+                <summary>Error Log <span id="error-count" class="muted">0 errors</span></summary>
+                <div id="error-log"></div>
+            </details>
         </section>
 
-        <section class="filters">
-            <select id="filter-status">
-                <option value="all">All statuses</option>
-                <option value="todo">Todo</option>
-                <option value="done">Done</option>
-            </select>
-            <select id="filter-priority">
-                <option value="all">All priorities</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-            </select>
-            <input id="filter-project" type="text" placeholder="Filter by project">
-            <select id="sort-tasks">
-                <option value="priority">Sort: priority</option>
-                <option value="newest">Sort: newest</option>
-                <option value="oldest">Sort: oldest</option>
-                <option value="project">Sort: project</option>
-            </select>
-        </section>
-
-        <section class="new-task">
-            <h2>New Task</h2>
-            <input id="task-title" type="text" placeholder="Task title">
-            <select id="task-priority">
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-            </select>
-            <input id="task-project" type="text" value="Officina Lab">
-            <button id="create-task-button">Create Task</button>
-        </section>
-
-        <section>
-            <h2>Tasks</h2>
-            <div id="tasks"></div>
-        </section>
-
-        <section class="incident-queue-section">
-            <div class="section-header">
-                <h2>Incident Queue</h2>
-                <span id="incident-count" class="muted">0 incidents</span>
+        <section class="dashboard-view" data-view="agents">
+            <div class="view-heading">
+                <div>
+                    <span class="eyebrow">Agent runtime</span>
+                    <h2>Agents & Runs</h2>
+                </div>
             </div>
-            <div class="incident-filters">
-                <button type="button" data-incident-filter="open">Open</button>
-                <button type="button" data-incident-filter="investigating">Investigating</button>
-                <button type="button" data-incident-filter="resolved">Resolved</button>
-                <button type="button" data-incident-filter="all">All</button>
-            </div>
-            <div id="incidents"></div>
+
+            <section class="agents-section panel">
+                <div class="section-header">
+                    <h2>Agents</h2>
+                    <span id="agent-count" class="muted">0 agents</span>
+                </div>
+                <div class="agent-form">
+                    <input id="agent-name" type="text" placeholder="Agent name">
+                    <input id="agent-role" type="text" placeholder="Role">
+                    <input id="agent-goal" type="text" placeholder="Goal">
+                    <input id="agent-project" type="text" value="Officina Lab">
+                    <button id="create-agent-button">Create Agent</button>
+                </div>
+                <div id="agents"></div>
+            </section>
+
+            <section class="runs-section panel">
+                <div class="section-header">
+                    <h2>Agent Runs</h2>
+                    <span id="run-count" class="muted">0 runs</span>
+                </div>
+
+                <section class="run-stats">
+                    <div class="stat-card"><span class="stat-label">Running</span><strong id="running-count">0</strong></div>
+                    <div class="stat-card"><span class="stat-label">Completed</span><strong id="completed-count">0</strong></div>
+                    <div class="stat-card"><span class="stat-label">Tokens</span><strong id="token-count">0</strong></div>
+                    <div class="stat-card"><span class="stat-label">Cost</span><strong id="cost-total">$0.00</strong></div>
+                </section>
+
+                <div class="run-form">
+                    <select id="run-agent"></select>
+                    <input id="run-task" type="text" placeholder="Run task">
+                    <button id="start-run-button">Start Run</button>
+                </div>
+
+                <div id="runs"></div>
+            </section>
+
+            <section class="approvals-section panel">
+                <div class="section-header">
+                    <h2>Approvals</h2>
+                    <span id="approval-count" class="muted">0 pending</span>
+                </div>
+                <div id="approvals"></div>
+            </section>
         </section>
 
-        <section class="error-log-section">
-            <div class="section-header">
-                <h2>Error Log</h2>
-                <span id="error-count" class="muted">0 errors</span>
+        <section class="dashboard-view" data-view="tasks">
+            <div class="view-heading">
+                <div>
+                    <span class="eyebrow">Execution</span>
+                    <h2>Tasks & Memory</h2>
+                </div>
             </div>
-            <div id="error-log"></div>
+
+            <section class="panel">
+                <div class="filters">
+                    <select id="filter-status">
+                        <option value="all">All statuses</option>
+                        <option value="todo">Todo</option>
+                        <option value="done">Done</option>
+                    </select>
+                    <select id="filter-priority">
+                        <option value="all">All priorities</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <input id="filter-project" type="text" placeholder="Filter by project">
+                    <select id="sort-tasks">
+                        <option value="priority">Sort: priority</option>
+                        <option value="newest">Sort: newest</option>
+                        <option value="oldest">Sort: oldest</option>
+                        <option value="project">Sort: project</option>
+                    </select>
+                </div>
+
+                <div class="new-task compact-form">
+                    <input id="task-title" type="text" placeholder="Task title">
+                    <select id="task-priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <input id="task-project" type="text" value="Officina Lab">
+                    <button id="create-task-button">Create Task</button>
+                </div>
+
+                <div class="section-header"><h2>Tasks</h2></div>
+                <div id="tasks"></div>
+            </section>
+
+            <section class="memory-section panel">
+                <div class="section-header">
+                    <h2>Memory</h2>
+                    <span id="memory-count" class="muted">0 memories</span>
+                </div>
+                <div class="memory-form">
+                    <input id="memory-content" type="text" placeholder="What should Officina remember?">
+                    <input id="memory-project" type="text" value="Officina Lab">
+                    <select id="memory-type">
+                        <option value="decision">Decision</option>
+                        <option value="fact">Fact</option>
+                        <option value="note" selected>Note</option>
+                    </select>
+                    <button id="create-memory-button">Save Memory</button>
+                </div>
+                <div id="memories"></div>
+            </section>
         </section>
 
-        <section class="tool-audit-section">
-            <div class="section-header">
-                <h2>Tool Audit</h2>
-                <span id="tool-call-count" class="muted">0 calls</span>
+        <section class="dashboard-view" data-view="audit">
+            <div class="view-heading">
+                <div>
+                    <span class="eyebrow">Observability</span>
+                    <h2>Audit & Activity</h2>
+                    <p>Technical traces stay here, away from daily operations.</p>
+                </div>
             </div>
-            <div id="tool-calls"></div>
-        </section>
 
-        <section class="activity-section">
-            <h2>Activity Log</h2>
-            <div id="activity-log"></div>
+            <details class="collapsible-panel" open>
+                <summary>Tool Audit <span id="tool-call-count" class="muted">0 calls</span></summary>
+                <div id="tool-calls"></div>
+            </details>
+
+            <details class="collapsible-panel">
+                <summary>Activity Log</summary>
+                <div id="activity-log"></div>
+            </details>
         </section>
     </main>
 
-    <script src="/static/app.js?v=32"></script>
+    <script src="/static/app.js?v=33"></script>
 </body>
 </html>
