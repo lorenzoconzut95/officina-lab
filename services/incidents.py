@@ -37,6 +37,15 @@ def sync_incidents(limit=50):
             )
             continue
 
+        if (
+            existing["status"] == "resolved"
+            and item["count"] > existing["occurrences"]
+        ):
+            repo_update_incident_status(
+                existing["id"],
+                "open"
+            )
+
         refresh_incident(
             existing["id"],
             item["severity"],
