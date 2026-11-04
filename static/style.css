@@ -29,3 +29,5 @@ body{font-family:Arial,sans-serif;background:#111;color:#f5f5f5;margin:0}.contai
 .incident-card.status-investigating{box-shadow:0 0 0 1px #ffbd2e inset}
 
 .incident-analysis{margin-top:10px;padding:10px;background:#101010;border:1px solid #2f2f2f;border-radius:8px;font-size:12px;color:#bbb;white-space:pre-wrap}
+
+.incident-report{margin-top:12px;padding:14px;background:#0d0d0d;border:1px solid #3a3a3a;border-radius:10px;font-size:12px;line-height:1.55;color:#d7d7d7;white-space:pre-wrap;overflow:auto;max-height:520px}
