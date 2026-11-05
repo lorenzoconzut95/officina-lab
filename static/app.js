@@ -1776,8 +1776,8 @@ async function analyzeIncidentWithBugHunter(incidentId) {
     "Occurrences: " + incident.occurrences + "\n" +
     "Latest run: #" + incident.latest_run_id + "\n" +
     "Latest agent: " + incident.latest_agent_name + "\n" +
-    "Latest task: " + incident.latest_task + "\n" +
-    "Latest error:\n" + incident.latest_error_message + "\n\n" +
+    "Latest task: " + (incident.latest_task || "").slice(0, 4000) + "\n" +
+    "Latest error:\n" + (incident.latest_error_message || "").slice(0, 4000) + "\n\n" +
     "Usa list_recent_errors e, se serve, list_project_files e " +
     "read_project_file. Separa evidenze da ipotesi. Restituisci: " +
     "sintomo, evidenza, causa probabile, confidenza, test minimo e " +
