@@ -557,7 +557,7 @@ function renderIncidents(items) {
     pipeline.className = "incident-pipeline";
     pipeline.innerHTML =
       '<span>Analysis: ' +
-      (analysisRun ? analysisRun.status : 'not started') +
+      (analysisRun ? (analysisRun.status === 'running' ? 'run created' : analysisRun.status) : 'not started') +
       '</span>' +
       '<span>Build proposal: ' +
       (builderRun ? builderRun.status : 'not started') +
