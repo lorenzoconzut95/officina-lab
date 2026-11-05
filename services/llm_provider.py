@@ -15,6 +15,8 @@ DEFAULT_MODEL = os.getenv(
 )
 
 MAX_TOOL_OUTPUT_BYTES = 128 * 1024
+TOTAL_TOOL_OUTPUT_BYTES = 256 * 1024
+MIN_TOOL_OUTPUT_BYTES = 1024
 
 INPUT_COST_PER_M = float(
     os.getenv(
@@ -169,22 +171,22 @@ def task_instructions(task):
     return ""
 
 
-def serialize_tool_output(result):
+def serialize_tool_output(result, max_bytes=MAX_TOOL_OUTPUT_BYTES):
     serialized = json.dumps(result, ensure_ascii=False)
     original_bytes = len(serialized.encode("utf-8"))
-    if original_bytes <= MAX_TOOL_OUTPUT_BYTES:
+    if original_bytes <= max_bytes:
         return serialized
 
     # Measure the complete envelope because escaping can enlarge the preview.
     envelope = {"truncated": True, "original_bytes": original_bytes, "preview": ""}
     lower = 0
-    upper = MAX_TOOL_OUTPUT_BYTES
+    upper = max_bytes
     bounded_output = json.dumps(envelope, ensure_ascii=False)
     while lower <= upper:
         length = (lower + upper) // 2
         envelope["preview"] = serialized[:length]
         candidate = json.dumps(envelope, ensure_ascii=False)
-        if len(candidate.encode("utf-8")) <= MAX_TOOL_OUTPUT_BYTES:
+        if len(candidate.encode("utf-8")) <= max_bytes:
             bounded_output = candidate
             lower = length + 1
         else:
@@ -238,6 +240,7 @@ def run_llm(agent, task, context_package):
     )
 
     tools_used = []
+    remaining_tool_bytes = TOTAL_TOOL_OUTPUT_BYTES
 
     max_tool_rounds = 4
     for round_index in range(max_tool_rounds):
@@ -250,11 +253,13 @@ def run_llm(agent, task, context_package):
         if not function_calls:
             break
 
-        input_items.extend(
-            response.output
-        )
+        if remaining_tool_bytes < len(function_calls) * MIN_TOOL_OUTPUT_BYTES:
+            # Leave unexecuted calls out of the history sent for the final answer.
+            function_calls = []
+        else:
+            input_items.extend(response.output)
 
-        for call in function_calls:
+        for index, call in enumerate(function_calls):
             result = execute_tool_json(
                 call.name,
                 call.arguments,
@@ -266,13 +271,24 @@ def run_llm(agent, task, context_package):
                 call.name
             )
 
+            max_bytes = min(
+                MAX_TOOL_OUTPUT_BYTES,
+                remaining_tool_bytes // (len(function_calls) - index)
+            )
+            output = serialize_tool_output(result, max_bytes)
+            remaining_tool_bytes -= len(output.encode("utf-8"))
+
             input_items.append({
                 "type": "function_call_output",
                 "call_id": call.call_id,
-                "output": serialize_tool_output(result)
+                "output": output
             })
 
-        final_round = round_index == max_tool_rounds - 1
+        final_round = (
+            not function_calls
+            or remaining_tool_bytes < MIN_TOOL_OUTPUT_BYTES
+            or round_index == max_tool_rounds - 1
+        )
         response = client.responses.create(
             model=DEFAULT_MODEL,
             instructions=(
@@ -292,6 +308,9 @@ def run_llm(agent, task, context_package):
 
         total_input += tokens_in
         total_output += tokens_out
+
+        if final_round:
+            break
 
     output = response.output_text
     if not output or not output.strip():

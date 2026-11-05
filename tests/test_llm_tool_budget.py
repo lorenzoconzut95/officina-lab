@@ -6,6 +6,7 @@ from unittest.mock import patch
 from services.llm_provider import (
     EmptyModelResponseError,
     MAX_TOOL_OUTPUT_BYTES,
+    TOTAL_TOOL_OUTPUT_BYTES,
     run_llm,
     serialize_tool_output,
 )
@@ -17,6 +18,34 @@ class LlmToolBudgetTests(unittest.TestCase):
     def test_small_tool_output_is_preserved(self):
         result = {"items": ["diagnosi già disponibile"]}
         self.assertEqual(json.loads(serialize_tool_output(result)), result)
+
+    @patch("services.llm_provider.execute_tool_json")
+    @patch("services.llm_provider.OpenAI")
+    def test_tool_output_budget_is_shared_across_rounds(self, client, execute_tool):
+        execute_tool.return_value = {"text": "x" * (100 * 1024)}
+        create_response = client.return_value.responses.create
+        create_response.side_effect = [
+            SimpleNamespace(output=[
+                SimpleNamespace(
+                    type="function_call", name="list_recent_errors",
+                    call_id=f"call_{round_index}_{index}", arguments="{}"
+                )
+                for index in range(2)
+            ], usage=None)
+            for round_index in range(2)
+        ] + [SimpleNamespace(output=[], usage=None, output_text="Final diagnosis")]
+
+        run_llm(AGENT, "Investigate", {"text": ""})
+
+        final_request = create_response.call_args.kwargs
+        outputs = [item["output"] for item in final_request["input"]
+                   if isinstance(item, dict) and item.get("type") == "function_call_output"]
+        self.assertEqual(len(outputs), 4)
+        self.assertEqual(json.loads(outputs[0]), execute_tool.return_value)
+        self.assertTrue(json.loads(outputs[-1])["truncated"])
+        self.assertLessEqual(sum(len(output.encode("utf-8")) for output in outputs),
+                             TOTAL_TOOL_OUTPUT_BYTES)
+        self.assertEqual(final_request["tool_choice"], "none")
 
     @patch("services.llm_provider.execute_tool_json")
     @patch("services.llm_provider.OpenAI")
