@@ -14,6 +14,8 @@ DEFAULT_MODEL = os.getenv(
     "gpt-6-luna"
 )
 
+MAX_TOOL_OUTPUT_BYTES = 128 * 1024
+
 INPUT_COST_PER_M = float(
     os.getenv(
         "OFFICINA_INPUT_COST_PER_M",
@@ -167,6 +169,29 @@ def task_instructions(task):
     return ""
 
 
+def serialize_tool_output(result):
+    serialized = json.dumps(result, ensure_ascii=False)
+    original_bytes = len(serialized.encode("utf-8"))
+    if original_bytes <= MAX_TOOL_OUTPUT_BYTES:
+        return serialized
+
+    # Measure the complete envelope because escaping can enlarge the preview.
+    envelope = {"truncated": True, "original_bytes": original_bytes, "preview": ""}
+    lower = 0
+    upper = MAX_TOOL_OUTPUT_BYTES
+    bounded_output = json.dumps(envelope, ensure_ascii=False)
+    while lower <= upper:
+        length = (lower + upper) // 2
+        envelope["preview"] = serialized[:length]
+        candidate = json.dumps(envelope, ensure_ascii=False)
+        if len(candidate.encode("utf-8")) <= MAX_TOOL_OUTPUT_BYTES:
+            bounded_output = candidate
+            lower = length + 1
+        else:
+            upper = length - 1
+    return bounded_output
+
+
 class EmptyModelResponseError(RuntimeError):
     pass
 
@@ -244,10 +269,7 @@ def run_llm(agent, task, context_package):
             input_items.append({
                 "type": "function_call_output",
                 "call_id": call.call_id,
-                "output": json.dumps(
-                    result,
-                    ensure_ascii=False
-                )
+                "output": serialize_tool_output(result)
             })
 
         final_round = round_index == max_tool_rounds - 1
