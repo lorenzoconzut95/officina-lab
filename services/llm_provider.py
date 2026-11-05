@@ -167,6 +167,10 @@ def task_instructions(task):
     return ""
 
 
+class EmptyModelResponseError(RuntimeError):
+    pass
+
+
 def run_llm(agent, task, context_package):
     client = OpenAI()
 
@@ -210,7 +214,8 @@ def run_llm(agent, task, context_package):
 
     tools_used = []
 
-    for _ in range(4):
+    max_tool_rounds = 4
+    for round_index in range(max_tool_rounds):
         function_calls = [
             item
             for item in response.output
@@ -245,13 +250,18 @@ def run_llm(agent, task, context_package):
                 )
             })
 
+        final_round = round_index == max_tool_rounds - 1
         response = client.responses.create(
             model=DEFAULT_MODEL,
-            instructions=instructions,
+            instructions=(
+                instructions + "\nTool budget exhausted. Give the final answer using the evidence collected so far."
+                if final_round else instructions
+            ),
             input=input_items,
             tools=tools_after_calls(
                 tools_used
-            )
+            ),
+            tool_choice="none" if final_round else "auto"
         )
 
         tokens_in, tokens_out = usage_numbers(
@@ -261,8 +271,12 @@ def run_llm(agent, task, context_package):
         total_input += tokens_in
         total_output += tokens_out
 
+    output = response.output_text
+    if not output or not output.strip():
+        raise EmptyModelResponseError("The model returned no final text.")
+
     return {
-        "output": response.output_text,
+        "output": output,
         "tokens_in": total_input,
         "tokens_out": total_output,
         "cost_usd": calculate_cost(
