@@ -43,7 +43,7 @@ def format_project_memories(project):
     return "\n".join(lines)
 
 
-def build_run_context(agent, task):
+def build_run_context(agent):
     system_context = load_officina_context()
     memory_context = format_project_memories(
         agent["project"]
@@ -53,8 +53,7 @@ def build_run_context(agent, task):
         "context/officina.md",
         "memory:project:" + agent["project"],
         "agent:" + agent["name"],
-        "project:" + agent["project"],
-        "task:current_run"
+        "project:" + agent["project"]
     ]
 
     text = (
@@ -63,8 +62,6 @@ def build_run_context(agent, task):
         "Role: " + agent["role"] + "\n"
         "Goal: " + (agent["goal"] or "No explicit goal set.") + "\n"
         "Project: " + agent["project"] + "\n\n"
-        "CURRENT TASK\n"
-        + task + "\n\n"
         "PROJECT MEMORY\n"
         + memory_context + "\n\n"
         "OFFICINA SYSTEM CONTEXT\n"

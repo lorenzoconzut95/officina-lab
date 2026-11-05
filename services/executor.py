@@ -122,7 +122,7 @@ def execute_run(run_id):
         raise RunAlreadyExecuted(run_id)
 
     try:
-        context_package = build_run_context(agent, run["task"])
+        context_package = build_run_context(agent)
         context_package["run_id"] = run_id
 
         set_run_context(
