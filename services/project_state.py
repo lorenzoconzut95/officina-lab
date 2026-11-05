@@ -96,7 +96,7 @@ def build_project_state(project, limit=5):
             {
                 "id": run["id"],
                 "agent_name": run["agent_name"],
-                "task": run["task"],
+                "task": (run["task"] or "")[:4000],
                 "status": run["status"],
                 "context_sources": run["context_sources"],
                 "output_preview": (
@@ -117,8 +117,8 @@ def build_project_state(project, limit=5):
             {
                 "run_id": item["run_id"],
                 "agent_name": item["agent_name"],
-                "task": item["task"],
-                "error_message": item["error_message"]
+                "task": (item["task"] or "")[:4000],
+                "error_message": (item["error_message"] or "")[:4000]
             }
             for item in recent_errors
         ]
