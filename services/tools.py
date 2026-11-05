@@ -327,8 +327,8 @@ def execute_tool(
                     "id": item["id"],
                     "run_id": item["run_id"],
                     "agent_name": item["agent_name"],
-                    "task": item["task"],
-                    "error_message": item["error_message"],
+                    "task": (item["task"] or "")[:4000],
+                    "error_message": (item["error_message"] or "")[:4000],
                     "created_at": item["created_at"]
                 }
                 for item in errors
