@@ -2,6 +2,7 @@ import json
 
 from repositories.agents import get_agent
 from repositories.runs import (
+    claim_run_execution,
     get_run,
     mark_execution_started,
     set_run_context
@@ -96,6 +97,10 @@ def humanize_llm_error(error):
     )
 
 
+class RunAlreadyExecuted(Exception):
+    pass
+
+
 def execute_run(run_id):
     run = get_run(run_id)
 
@@ -109,54 +114,53 @@ def execute_run(run_id):
     if agent is None:
         return None
 
-    context_package = build_run_context(
-        agent,
-        run["task"]
-    )
+    if not claim_run_execution(run_id):
+        raise RunAlreadyExecuted(run_id)
 
-    context_package["run_id"] = run_id
+    try:
+        context_package = build_run_context(agent, run["task"])
+        context_package["run_id"] = run_id
 
-    set_run_context(
-        run_id,
-        DEFAULT_MODEL if is_configured() else "local-executor",
-        json.dumps(
-            context_package["sources"]
-        ),
-        context_package["text"]
-    )
+        set_run_context(
+            run_id,
+            DEFAULT_MODEL if is_configured() else "local-executor",
+            json.dumps(
+                context_package["sources"]
+            ),
+            context_package["text"]
+        )
 
-    api_key_status = get_api_key_status()
+        api_key_status = get_api_key_status()
 
-    if not api_key_status["configured"]:
-        if api_key_status["reason"] == "placeholder":
+        if not api_key_status["configured"]:
+            if api_key_status["reason"] == "placeholder":
+                return finish_run(
+                    run_id,
+                    "failed",
+                    (
+                        "OpenAI configuration error: OPENAI_API_KEY "
+                        "contains a placeholder value. Set a real API key "
+                        "in the server terminal before executing this run."
+                    ),
+                    0,
+                    0,
+                    0
+                )
+
+            output = build_local_output(
+                agent,
+                run["task"]
+            )
+
             return finish_run(
                 run_id,
-                "failed",
-                (
-                    "OpenAI configuration error: OPENAI_API_KEY "
-                    "contains a placeholder value. Set a real API key "
-                    "in the server terminal before executing this run."
-                ),
+                "completed",
+                output,
                 0,
                 0,
                 0
             )
 
-        output = build_local_output(
-            agent,
-            run["task"]
-        )
-
-        return finish_run(
-            run_id,
-            "completed",
-            output,
-            0,
-            0,
-            0
-        )
-
-    try:
         mark_execution_started(run_id)
         result = run_llm(
             agent,

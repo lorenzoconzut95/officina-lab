@@ -8,7 +8,7 @@ from services.runs import (
     create_builder_handoff
 )
 
-from services.executor import execute_run
+from services.executor import RunAlreadyExecuted, execute_run
 
 
 router = APIRouter(
@@ -55,7 +55,13 @@ def finish_existing_run(
 
 @router.post("/{run_id}/execute")
 def execute_existing_run(run_id: int):
-    run = execute_run(run_id)
+    try:
+        run = execute_run(run_id)
+    except RunAlreadyExecuted as error:
+        raise HTTPException(
+            status_code=409,
+            detail="This run has already been started or finished. Create a new run to retry."
+        ) from error
 
     if run is None:
         raise HTTPException(

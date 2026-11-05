@@ -89,6 +89,25 @@ def create_run(agent_id, task):
     return get_run(run_id)
 
 
+def claim_run_execution(run_id):
+    connection = get_connection()
+    try:
+        cursor = connection.execute(
+            """
+            UPDATE runs
+            SET execution_claimed_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND status = 'running'
+              AND execution_claimed_at IS NULL
+              AND execution_started_at IS NULL
+            """,
+            (run_id,)
+        )
+        connection.commit()
+        return cursor.rowcount == 1
+    finally:
+        connection.close()
+
+
 def mark_execution_started(run_id):
     connection = get_connection()
     try:

@@ -161,6 +161,7 @@ def init_db():
     ensure_column(cursor, "runs", "context_sources", "TEXT")
     ensure_column(cursor, "runs", "context_snapshot", "TEXT")
     ensure_column(cursor, "runs", "execution_started_at", "TEXT")
+    ensure_column(cursor, "runs", "execution_claimed_at", "TEXT")
 
     connection.commit()
     connection.close()

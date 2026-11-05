@@ -5,6 +5,7 @@ from unittest.mock import patch
 from services.executor import execute_run
 
 
+@patch("services.executor.claim_run_execution", return_value=True)
 class ExecutorApiKeyTests(unittest.TestCase):
     @patch("services.executor.run_llm")
     @patch("services.executor.finish_run")
@@ -23,7 +24,8 @@ class ExecutorApiKeyTests(unittest.TestCase):
         mock_build_context,
         mock_set_context,
         mock_finish_run,
-        mock_run_llm
+        mock_run_llm,
+        mock_claim_run_execution
     ):
         mock_key_status.return_value = {
             "configured": False,
@@ -90,7 +92,8 @@ class ExecutorApiKeyTests(unittest.TestCase):
         mock_build_context,
         mock_set_context,
         mock_finish_run,
-        mock_run_llm
+        mock_run_llm,
+        mock_claim_run_execution
     ):
         mock_get_run.return_value = {
             "id": 43,
