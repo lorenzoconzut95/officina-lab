@@ -553,11 +553,16 @@ function renderIncidents(items) {
 
     card.appendChild(recommendation);
 
+    let analysisStatus = analysisRun?.status || "not started";
+    if (analysisStatus === "running") {
+      analysisStatus = analysisRun.execution_started_at ? "executing" : "run created";
+    }
+
     const pipeline = document.createElement("div");
     pipeline.className = "incident-pipeline";
     pipeline.innerHTML =
       '<span>Analysis: ' +
-      (analysisRun ? (analysisRun.status === 'running' ? 'run created' : analysisRun.status) : 'not started') +
+      analysisStatus +
       '</span>' +
       '<span>Build proposal: ' +
       (builderRun ? builderRun.status : 'not started') +
@@ -1858,6 +1863,11 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => {
     const viewName = button.getAttribute("data-view-target");
     switchDashboardView(viewName);
+    if (viewName === "incidents") {
+      loadRuns().then(() => renderIncidents(allIncidents)).catch(error => {
+        console.error("Could not refresh incident run states", error);
+      });
+    }
   });
 });
 

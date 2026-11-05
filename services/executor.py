@@ -3,6 +3,7 @@ import json
 from repositories.agents import get_agent
 from repositories.runs import (
     get_run,
+    mark_execution_started,
     set_run_context
 )
 from services.runs import finish_run
@@ -156,6 +157,7 @@ def execute_run(run_id):
         )
 
     try:
+        mark_execution_started(run_id)
         result = run_llm(
             agent,
             run["task"],
