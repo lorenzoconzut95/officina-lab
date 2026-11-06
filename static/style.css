@@ -90,8 +90,11 @@ body{background:#0c0c0d}
 .incident-pipeline{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
 .incident-pipeline span{background:#111214;border:1px solid #2d2d30;border-radius:7px;padding:6px 8px;font-size:11px;color:#8f8f8f}
 .incident-primary-actions,.incident-secondary-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
-.incident-primary-actions button,.incident-secondary-actions button{padding:8px 10px;border-radius:8px;border:1px solid #3d3d40;background:#202023;color:#eee;cursor:pointer}
+.incident-primary-actions button,.incident-primary-actions a,.incident-secondary-actions button{padding:8px 10px;border-radius:8px;border:1px solid #3d3d40;background:#202023;color:#eee;cursor:pointer}
 .incident-primary-actions button:first-child{background:#ececec;color:#111;border-color:#ececec}
+.incident-primary-actions .incident-analysis-link{display:inline-flex;align-items:center;gap:10px;background:#192b43;border-color:#466b9e;color:#e1edff;font-weight:600;text-decoration:none}
+.incident-primary-actions .incident-analysis-link:hover{background:#243c5c;border-color:#7198cd}
+.incident-analysis-link:focus-visible,.run-detail:focus-visible{outline:2px solid #91baff;outline-offset:3px}
 .incident-details{margin-top:10px;border-top:1px solid #2b2b2d;padding-top:9px}
 .incident-details summary{cursor:pointer;color:#8d8d8d;font-size:12px}
 .incident-details-body{display:grid;gap:8px;margin-top:10px;color:#9a9a9a;font-size:12px;line-height:1.45}

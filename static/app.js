@@ -11,7 +11,7 @@ let selectedRunId = null;
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
-function switchDashboardView(viewName) {
+function switchDashboardView(viewName, {scrollToTop = true} = {}) {
   document.querySelectorAll(".dashboard-view").forEach(view => {
     view.classList.toggle(
       "active",
@@ -26,10 +26,9 @@ function switchDashboardView(viewName) {
     );
   });
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  if (scrollToTop) {
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }
 }
 
 function updateIncidentNavBadge(items) {
@@ -582,10 +581,39 @@ function renderIncidents(items) {
     const analyzeButton = document.createElement("button");
     analyzeButton.type = "button";
     analyzeButton.textContent = analysisRun ? "Re-analyze" : "Analyze";
+    const analysisHelp = document.createElement("p");
+    analysisHelp.id = "incident-analysis-help-" + item.id;
+    analysisHelp.className = "incident-meta";
+    analysisHelp.textContent = analysisRun
+      ? "Re-analyze prepara una nuova run e la collega a questo incidente."
+      : "Analyze prepara una run di Bug Hunter e la collega a questo incidente.";
+    if (analysisStatus === "run created") {
+      analysisHelp.textContent += " La run collegata è pronta: aprila e premi Execute per avviarla.";
+    }
+    analyzeButton.setAttribute("aria-describedby", analysisHelp.id);
     analyzeButton.addEventListener("click", () => {
       analyzeIncidentWithBugHunter(item.id);
     });
     actions.appendChild(analyzeButton);
+
+    if (analysisRun) {
+      const openAnalysisLink = document.createElement("a");
+      openAnalysisLink.className = "incident-analysis-link";
+      openAnalysisLink.href = "#run-" + analysisRun.id;
+      openAnalysisLink.textContent = "Open analysis run #" + analysisRun.id;
+      const arrow = document.createElement("span");
+      arrow.textContent = "→";
+      arrow.setAttribute("aria-hidden", "true");
+      openAnalysisLink.appendChild(arrow);
+      openAnalysisLink.addEventListener("click", event => {
+        if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey &&
+            window.location.hash === openAnalysisLink.hash) {
+          event.preventDefault();
+          openRunWorkspace(analysisRun.id);
+        }
+      });
+      actions.appendChild(openAnalysisLink);
+    }
 
     if (analysisRun && analysisRun.status === "completed") {
       const handoffButton = document.createElement("button");
@@ -671,7 +699,7 @@ function renderIncidents(items) {
       actions.appendChild(resolveButton);
     }
 
-    card.appendChild(actions);
+    card.append(actions, analysisHelp);
 
     const details = document.createElement("details");
     details.className = "incident-details";
@@ -847,8 +875,13 @@ function openRunWorkspace(runId) {
     document.getElementById("run-search").value = "";
   }
 
-  switchDashboardView("agents");
+  switchDashboardView("agents", {scrollToTop: false});
   selectRun(runId);
+
+  const detail = document.getElementById("run-detail");
+  detail.scrollTop = 0;
+  detail.focus({preventScroll: true});
+  detail.scrollIntoView({block: "start"});
 }
 
 function splitRunOutput(output) {
@@ -870,23 +903,43 @@ function splitRunOutput(output) {
   };
 }
 
-function splitRunTask(task) {
-  const text = task || "";
-  const marker = "CURRENT PROJECT STATE SNAPSHOT:";
+function summarizeRunTask(task) {
+  const text = (task || "").trim();
+  const heading = text.split("\n", 1)[0];
+  const incident = /^Incident #(\d+)$/m.exec(text.slice(0, 240));
+  const subject = incident ? "l’incidente #" + incident[1] : "l’incidente";
 
-  if (!text.includes(marker)) {
-    return {
-      summary: text,
-      technical: ""
-    };
+  if (heading === "INCIDENT HANDOFF TO BUILDER") {
+    return "Esamina la diagnosi per " + subject + " e proponi la modifica più piccola da verificare.";
+  }
+  if (heading === "VERIFY INCIDENT AFTER APPROVED BUILDER PROPOSAL") {
+    return "Verifica se la modifica approvata risolve il problema per " + subject + ".";
+  }
+  if (heading.startsWith("HANDOFF FROM RUN #")) {
+    const source = /^HANDOFF FROM RUN #(\d+)$/.exec(heading);
+    return source
+      ? "Riprendi il lavoro dalla run #" + source[1] + " e proponi il prossimo passo tecnico."
+      : "Riprendi il lavoro precedente e proponi il prossimo passo tecnico.";
+  }
+  if (heading.startsWith("Analizza questo incidente reale di Officina Lab")) {
+    return "Analizza l’incidente: controlla le prove, spiega la causa probabile e suggerisci una verifica.";
+  }
+  if (heading.startsWith("Analizza questo errore reale di Officina Lab")) {
+    return "Analizza l’errore: controlla le prove, spiega la causa probabile e suggerisci una verifica.";
+  }
+  if (heading.startsWith("[TEST limite 512 KiB]")) {
+    return "Verifica che Officina Lab blocchi una richiesta oltre il limite di 512 KiB.";
   }
 
-  const parts = text.split(marker);
+  if (/^\{\s*(?:"|\})|^\[\s*(?:[\[{"\]\d-]|true\b|false\b|null\b)/.test(text)) {
+    return "Questo task contiene dati strutturati. Apri il task completo per leggerli.";
+  }
 
-  return {
-    summary: parts[0].trim(),
-    technical: marker + parts.slice(1).join(marker)
-  };
+  const preview = text.slice(0, 500).split(/\n\s*\n/, 1)[0].replace(/\s+/g, " ").trim();
+  const excerpt = preview.slice(0, 220).trimEnd();
+  return text.length > 500 || excerpt.length < text.replace(/\s+/g, " ").length
+    ? excerpt + "…"
+    : excerpt;
 }
 
 function renderRunDetail(run) {
@@ -928,7 +981,7 @@ function renderRunDetail(run) {
     }
   }
 
-  const taskParts = splitRunTask(run.task);
+  const taskSummary = summarizeRunTask(run.task);
   const outputParts = splitRunOutput(run.output);
 
   detail.innerHTML =
@@ -947,12 +1000,12 @@ function renderRunDetail(run) {
     '</div>' +
     '<div class="run-detail-block">' +
       '<span class="run-detail-label">Task</span>' +
-      '<div class="run-detail-text">' + (taskParts.summary || "—") + '</div>' +
+      '<div class="run-detail-text run-task-summary"></div>' +
     '</div>' +
-    (taskParts.technical
+    (run.task && taskSummary !== run.task.trim()
       ? '<details class="run-technical-context">' +
-          '<summary>Technical context</summary>' +
-          '<pre>' + taskParts.technical + '</pre>' +
+          '<summary>Task completo</summary>' +
+          '<pre class="run-full-task"></pre>' +
         '</details>'
       : '') +
     '<div class="run-detail-block run-output-block">' +
@@ -972,6 +1025,10 @@ function renderRunDetail(run) {
         '</details>'
       : '') +
     '<div class="run-detail-actions">' + actions + '</div>';
+
+  detail.querySelector(".run-task-summary").textContent = taskSummary || "—";
+  const fullTask = detail.querySelector(".run-full-task");
+  if (fullTask) fullTask.textContent = run.task;
 }
 
 function renderRuns(runs) {
@@ -1008,18 +1065,17 @@ function renderRuns(runs) {
       (run.id === selectedRunId ? " active" : "");
     item.addEventListener("click", () => selectRun(run.id));
 
-    const preview = (run.task || "")
-      .replace(/\s+/g, " ")
-      .slice(0, 90);
+    const preview = summarizeRunTask(run.task);
 
     item.innerHTML =
       '<div class="run-list-top">' +
         '<strong>' + run.agent_name + '</strong>' +
         '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
       '</div>' +
-      '<div class="run-list-task">' + preview + '</div>' +
+      '<div class="run-list-task"></div>' +
       '<div class="run-list-meta">#' + run.id + ' · ' + (run.started_at || "") + '</div>';
 
+    item.querySelector(".run-list-task").textContent = preview || "—";
     list.appendChild(item);
   });
 
@@ -1837,11 +1893,11 @@ async function analyzeIncidentWithBugHunter(incidentId) {
     return alert("Run creato, ma collegamento all'incidente fallito");
   }
 
-  await Promise.all([
-    loadRuns(),
-    loadAgents(),
-    loadIncidents()
-  ]);
+  if (incidentFilter !== "all") {
+    incidentFilter = "investigating";
+  }
+  await Promise.all([loadRuns(), loadAgents()]);
+  await loadIncidents();
 }
 
 async function handoffToBuilder(runId) {
@@ -1920,4 +1976,11 @@ document.getElementById("clear-project-filter").onclick = () => {
   applyFilters();
 };
 
-refreshDashboard();
+function openRunFromLink() {
+  const match = /^#run-(\d+)$/.exec(window.location.hash);
+  if (match) openRunWorkspace(Number(match[1]));
+}
+
+const dashboardReady = refreshDashboard();
+dashboardReady.then(openRunFromLink);
+window.addEventListener("hashchange", () => dashboardReady.then(openRunFromLink));

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=28">
+    <link rel="stylesheet" href="/static/style.css?v=30">
 </head>
 <body>
     <header class="app-shell-header">
@@ -163,7 +163,7 @@
 
                 <div class="run-workspace">
                     <aside id="run-list" class="run-list"></aside>
-                    <section id="run-detail" class="run-detail">
+                    <section id="run-detail" class="run-detail" tabindex="-1" aria-label="Run details">
                         <div class="run-detail-empty">
                             Select a run to inspect task, output, metrics and actions.
                         </div>
@@ -257,6 +257,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=55"></script>
+    <script src="/static/app.js?v=59"></script>
 </body>
 </html>
