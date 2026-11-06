@@ -204,5 +204,15 @@ def init_db():
         ON runs (retry_of_run_id)
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS model_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL REFERENCES runs(id),
+            model TEXT NOT NULL,
+            request_bytes INTEGER NOT NULL,
+            started_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+        )
+    """)
+
     connection.commit()
     connection.close()

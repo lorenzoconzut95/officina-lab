@@ -3,6 +3,7 @@ import os
 
 from openai import OpenAI
 
+from repositories.model_requests import record_model_request
 from services.tools import (
     TOOL_DEFINITIONS,
     execute_tool_json
@@ -203,7 +204,7 @@ class ModelRequestTooLargeError(RuntimeError):
     pass
 
 
-def create_bounded_response(client, **request):
+def create_bounded_response(client, *, run_id=None, **request):
     payload = json.dumps(
         request,
         ensure_ascii=False,
@@ -217,11 +218,14 @@ def create_bounded_response(client, **request):
             f"The request is {request_bytes:,} bytes. The limit is "
             f"{MAX_REQUEST_BYTES:,} bytes. Reduce the task or context and create a new run."
         )
+    if run_id is not None:
+        record_model_request(run_id, request["model"], request_bytes)
     return client.responses.create(**request)
 
 
 def run_llm(agent, task, context_package):
     client = OpenAI()
+    run_id = context_package.get("run_id")
 
     instructions = (
         "You are an agent inside Officina Lab. "
@@ -252,6 +256,7 @@ def run_llm(agent, task, context_package):
 
     response = create_bounded_response(
         client,
+        run_id=run_id,
         model=DEFAULT_MODEL,
         instructions=instructions,
         input=input_items,
@@ -287,7 +292,7 @@ def run_llm(agent, task, context_package):
                 call.name,
                 call.arguments,
                 agent_name=agent["name"],
-                run_id=context_package.get("run_id")
+                run_id=run_id
             )
 
             tools_used.append(
@@ -314,6 +319,7 @@ def run_llm(agent, task, context_package):
         )
         response = create_bounded_response(
             client,
+            run_id=run_id,
             model=DEFAULT_MODEL,
             instructions=(
                 instructions + "\nTool budget exhausted. Give the final answer using the evidence collected so far."

@@ -1,10 +1,14 @@
 import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from openai.types.responses import ResponseFunctionToolCall
 
+import database
+from repositories.runs import create_run
 from services.llm_provider import (
     EmptyModelResponseError,
     MAX_REQUEST_BYTES,
@@ -19,6 +23,41 @@ AGENT = {"name": "Bug Hunter", "role": "debug"}
 
 
 class LlmToolBudgetTests(unittest.TestCase):
+    @patch("services.llm_provider.execute_tool_json", return_value={"ok": True})
+    @patch("services.llm_provider.OpenAI")
+    def test_records_initial_and_followup_requests_only_when_sent(self, client, execute_tool):
+        create_response = client.return_value.responses.create
+        create_response.side_effect = [
+            SimpleNamespace(output=[ResponseFunctionToolCall(
+                type="function_call", name="list_recent_errors", call_id="call_1", arguments="{}"
+            )], usage=None),
+            SimpleNamespace(output=[], usage=None, output_text="Final diagnosis"),
+        ]
+
+        with TemporaryDirectory() as directory, patch.object(
+            database, "DB_NAME", str(Path(directory) / "test.db")
+        ):
+            database.init_db()
+            connection = database.get_connection()
+            with connection:
+                agent_id = connection.execute(
+                    "INSERT INTO agents (name, role) VALUES ('Bug Hunter', 'debug')"
+                ).lastrowid
+            run_id = create_run(agent_id, "Investigate")["id"]
+            context = {"text": "", "run_id": run_id}
+            run_llm(AGENT, "Investigate", context)
+            with self.assertRaises(ModelRequestTooLargeError):
+                run_llm(AGENT, "x" * MAX_REQUEST_BYTES, context)
+
+            records = connection.execute("SELECT * FROM model_requests ORDER BY id").fetchall()
+            connection.close()
+
+        self.assertEqual(create_response.call_count, 2)
+        execute_tool.assert_called_once()
+        self.assertEqual([row["run_id"] for row in records], [run_id, run_id])
+        self.assertTrue(all(row["started_at"].endswith("Z") for row in records))
+        self.assertGreater(records[1]["request_bytes"], records[0]["request_bytes"])
+
     @patch("services.llm_provider.OpenAI")
     def test_oversized_initial_request_is_blocked_before_sending(self, client):
         with self.assertRaisesRegex(
