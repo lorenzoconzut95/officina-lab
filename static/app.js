@@ -602,9 +602,7 @@ function renderIncidents(items) {
       openBuilderButton.type = "button";
       openBuilderButton.textContent = "Open Builder run";
       openBuilderButton.addEventListener("click", () => {
-        selectedRunId = builderRun.id;
-        switchDashboardView("agents");
-        renderRuns(allRuns);
+        openRunWorkspace(builderRun.id);
       });
       actions.appendChild(openBuilderButton);
     }
@@ -836,6 +834,21 @@ function getVisibleRuns(runs) {
 function selectRun(runId) {
   selectedRunId = runId;
   renderRuns(allRuns);
+}
+
+function openRunWorkspace(runId) {
+  if (!allRuns.some(run => run.id === runId)) {
+    return alert("Run #" + runId + " is not available in Run Workspace.");
+  }
+
+  if (!getVisibleRuns(allRuns).some(run => run.id === runId)) {
+    document.getElementById("run-filter-status").value = "all";
+    document.getElementById("run-filter-agent").value = "all";
+    document.getElementById("run-search").value = "";
+  }
+
+  switchDashboardView("agents");
+  selectRun(runId);
 }
 
 function splitRunOutput(output) {
@@ -1685,7 +1698,16 @@ async function viewIncidentReport(incidentId, card) {
     text += "\nBUG HUNTER ANALYSIS\nNessuna analisi collegata.";
   }
 
-  box.textContent = text;
+  const sourceRunId = report.latest_error.run_id;
+  if (sourceRunId != null) {
+    const openSourceButton = document.createElement("button");
+    openSourceButton.type = "button";
+    openSourceButton.textContent = "Open source run #" + sourceRunId;
+    openSourceButton.addEventListener("click", () => openRunWorkspace(sourceRunId));
+    box.append(openSourceButton, "\n\n" + text);
+  } else {
+    box.textContent = text;
+  }
   card.appendChild(box);
 }
 
