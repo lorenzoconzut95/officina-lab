@@ -219,3 +219,11 @@ error
 → linked analysis run
 → resolved
 → automatic reopen if the error recurs
+
+## Checkpoint 2026-11-06 — Incident #14 resolved
+
+- Bug Hunter run #68 completed with a diagnosis after reducing the context sent to the model.
+- The historical 38 MB tool result from run #64 was replayed locally and capped at 128 KiB. Tool outputs also share a cumulative budget of 256 KiB per run.
+- Test run #72 confirmed that the local server blocked a 540,386-byte request before sending it to OpenAI. The request limit is 524,288 bytes (512 KiB). Automated tests cover both the initial request and follow-up requests after tool use. All 26 tests passed.
+- Builder proposal #71 was left pending. Review found no current path that bypasses the tool-output limits.
+- Incident #14 was resolved manually based on the evidence above. No formal verification run was linked.
