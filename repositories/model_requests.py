@@ -5,7 +5,7 @@ def list_model_requests(run_id):
     connection = get_connection()
     try:
         rows = connection.execute("""
-            SELECT started_at, tokens_in, tokens_out
+            SELECT started_at, tokens_in, tokens_out, outcome, http_status
             FROM model_requests
             WHERE run_id = ?
             ORDER BY id
@@ -20,22 +20,22 @@ def record_model_request(run_id, model, request_bytes):
     try:
         with connection:
             cursor = connection.execute("""
-                INSERT INTO model_requests (run_id, model, request_bytes)
-                VALUES (?, ?, ?)
+                INSERT INTO model_requests (run_id, model, request_bytes, outcome)
+                VALUES (?, ?, ?, 'pending')
             """, (run_id, model, request_bytes))
             return cursor.lastrowid
     finally:
         connection.close()
 
 
-def record_model_request_usage(request_id, tokens_in, tokens_out):
+def finish_model_request(request_id, outcome, *, tokens_in=None, tokens_out=None, http_status=None):
     connection = get_connection()
     try:
         with connection:
             connection.execute("""
                 UPDATE model_requests
-                SET tokens_in = ?, tokens_out = ?
+                SET outcome = ?, tokens_in = ?, tokens_out = ?, http_status = ?
                 WHERE id = ?
-            """, (tokens_in, tokens_out, request_id))
+            """, (outcome, tokens_in, tokens_out, http_status, request_id))
     finally:
         connection.close()

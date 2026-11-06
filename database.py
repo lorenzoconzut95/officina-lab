@@ -215,6 +215,8 @@ def init_db():
     """)
     ensure_column(cursor, "model_requests", "tokens_in", "INTEGER")
     ensure_column(cursor, "model_requests", "tokens_out", "INTEGER")
+    ensure_column(cursor, "model_requests", "outcome", "TEXT")
+    ensure_column(cursor, "model_requests", "http_status", "INTEGER")
 
     connection.commit()
     connection.close()

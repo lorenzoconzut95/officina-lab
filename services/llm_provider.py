@@ -3,7 +3,7 @@ import os
 
 from openai import OpenAI
 
-from repositories.model_requests import record_model_request, record_model_request_usage
+from repositories.model_requests import finish_model_request, record_model_request
 from services.tools import (
     TOOL_DEFINITIONS,
     execute_tool_json
@@ -222,9 +222,16 @@ def create_bounded_response(client, *, run_id=None, **request):
     if run_id is not None:
         request_id = record_model_request(run_id, request["model"], request_bytes)
 
-    response = client.responses.create(**request)
-    if request_id is not None and response.usage is not None:
-        record_model_request_usage(request_id, *usage_numbers(response))
+    try:
+        response = client.responses.create(**request)
+    except Exception as error:
+        if request_id is not None:
+            finish_model_request(request_id, "error", http_status=getattr(error, "status_code", None))
+        raise
+
+    if request_id is not None:
+        tokens_in, tokens_out = usage_numbers(response) if response.usage is not None else (None, None)
+        finish_model_request(request_id, "response", tokens_in=tokens_in, tokens_out=tokens_out)
     return response
 
 

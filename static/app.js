@@ -976,6 +976,7 @@ function bindRunModelRequests(detail, runId) {
   const table = section.querySelector("table");
   let loading = false;
   let loaded = false;
+  const outcomeLabels = {pending: "In attesa", response: "Risposta ricevuta", error: "Errore"};
 
   section.addEventListener("toggle", async () => {
     if (!section.open || loading || loaded) return;
@@ -993,6 +994,8 @@ function bindRunModelRequests(detail, runId) {
         row.insertCell().textContent = new Date(request.started_at).toLocaleString("it-IT");
         row.insertCell().textContent = request.tokens_in?.toLocaleString("it-IT") ?? "—";
         row.insertCell().textContent = request.tokens_out?.toLocaleString("it-IT") ?? "—";
+        const outcome = outcomeLabels[request.outcome] || "Sconosciuto";
+        row.insertCell().textContent = request.http_status ? outcome + " " + request.http_status : outcome;
       });
 
       table.hidden = requests.length === 0;
@@ -1078,6 +1081,7 @@ function renderRunDetail(run) {
           '<th scope="col">Ora di invio</th>' +
           '<th scope="col">Token in entrata</th>' +
           '<th scope="col">Token in uscita</th>' +
+          '<th scope="col">Esito</th>' +
         '</tr></thead><tbody></tbody></table>' +
         '<p class="incident-meta run-model-requests-status" role="status"></p>' +
       '</div>' +
