@@ -8,6 +8,7 @@ let allErrors = [];
 let allIncidents = [];
 let incidentFilter = "open";
 let selectedRunId = null;
+const activeRunExecutions = new Set();
 
 const priorityWeight = { high: 3, medium: 2, low: 1 };
 
@@ -838,7 +839,7 @@ function getVisibleRuns(runs) {
     .toLowerCase();
 
   return runs.filter(run => {
-    const statusOk = status === "all" || run.status === status;
+    const statusOk = status === "all" || runDisplayState(run) === status;
     const agentOk = agent === "all" || run.agent_name === agent;
     const haystack = (
       (run.task || "") + " " +
@@ -847,6 +848,28 @@ function getVisibleRuns(runs) {
     ).toLowerCase();
     const searchOk = !search || haystack.includes(search);
     return statusOk && agentOk && searchOk;
+  });
+}
+
+function runDisplayState(run) {
+  if (run.status !== "running") return run.status;
+  return run.execution_claimed_at || run.execution_started_at || activeRunExecutions.has(run.id)
+    ? "executing"
+    : "ready";
+}
+
+function runStatusLabel(run) {
+  const state = runDisplayState(run);
+  if (state === "ready") return "Pronta da avviare";
+  if (state === "executing") return "In esecuzione";
+  return state;
+}
+
+function refreshRunStatusLabels(runId) {
+  const run = allRuns.find(item => item.id === runId);
+  if (!run) return;
+  document.querySelectorAll('[data-run-status="' + runId + '"]').forEach(label => {
+    label.textContent = runStatusLabel(run);
   });
 }
 
@@ -961,8 +984,10 @@ function renderRunDetail(run) {
   let actions = "";
 
   if (run.status === "running") {
+    if (runDisplayState(run) === "ready") {
+      actions += '<button onclick="executeRun(' + run.id + ', this)">Execute</button>';
+    }
     actions +=
-      '<button onclick="executeRun(' + run.id + ', this)">Execute</button>' +
       '<button onclick="finishRun(' + run.id + ',\'completed\')">Complete</button>' +
       '<button onclick="finishRun(' + run.id + ',\'failed\')">Fail</button>';
   }
@@ -1000,7 +1025,7 @@ function renderRunDetail(run) {
         '<h3>' + run.agent_name + '</h3>' +
         (run.retry_of_run_id != null ? '<p class="incident-meta run-retry-source"></p>' : '') +
       '</div>' +
-      '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
+      '<span class="run-status ' + run.status + '" data-run-status="' + run.id + '">' + runStatusLabel(run) + '</span>' +
     '</div>' +
     '<div class="run-detail-grid">' +
       '<div><span class="run-detail-label">Started</span><strong>' + (run.started_at || "—") + '</strong></div>' +
@@ -1087,7 +1112,7 @@ function renderRuns(runs) {
     item.innerHTML =
       '<div class="run-list-top">' +
         '<strong>' + run.agent_name + '</strong>' +
-        '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
+        '<span class="run-status ' + run.status + '" data-run-status="' + run.id + '">' + runStatusLabel(run) + '</span>' +
       '</div>' +
       '<div class="run-list-task"></div>' +
       '<div class="run-list-meta">#' + run.id + ' · ' + (run.started_at || "") + '</div>';
@@ -1464,6 +1489,9 @@ async function executeRun(id, button = null) {
   const startedAt = Date.now();
   let timerId = null;
 
+  activeRunExecutions.add(id);
+  refreshRunStatusLabels(id);
+
   const updateButtonTimer = () => {
     if (!button) return;
 
@@ -1531,6 +1559,9 @@ async function executeRun(id, button = null) {
       id + ": " + error.message
     );
   } finally {
+    activeRunExecutions.delete(id);
+    refreshRunStatusLabels(id);
+
     if (timerId) {
       clearInterval(timerId);
     }
