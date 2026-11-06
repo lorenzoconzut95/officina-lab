@@ -9,6 +9,7 @@ from openai.types.responses import ResponseFunctionToolCall
 
 import database
 from repositories.runs import create_run
+from routes.runs import read_run_model_requests
 from services.llm_provider import (
     EmptyModelResponseError,
     MAX_REQUEST_BYTES,
@@ -51,6 +52,8 @@ class LlmToolBudgetTests(unittest.TestCase):
 
             records = connection.execute("SELECT * FROM model_requests ORDER BY id").fetchall()
             connection.close()
+            request_details = read_run_model_requests(run_id)
+            self.assertEqual(read_run_model_requests(run_id + 1), [])
 
         self.assertEqual(create_response.call_count, 2)
         execute_tool.assert_called_once()
@@ -60,6 +63,10 @@ class LlmToolBudgetTests(unittest.TestCase):
         self.assertEqual((records[0]["tokens_in"], records[0]["tokens_out"]), (120, 8))
         self.assertEqual((records[1]["tokens_in"], records[1]["tokens_out"]), (None, None))
         self.assertEqual((result["tokens_in"], result["tokens_out"]), (120, 8))
+        self.assertEqual(request_details, [
+            {"started_at": records[0]["started_at"], "tokens_in": 120, "tokens_out": 8},
+            {"started_at": records[1]["started_at"], "tokens_in": None, "tokens_out": None},
+        ])
 
     @patch("services.llm_provider.OpenAI")
     def test_oversized_initial_request_is_blocked_before_sending(self, client):

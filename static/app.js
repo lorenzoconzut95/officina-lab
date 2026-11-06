@@ -970,6 +970,44 @@ function summarizeRunTask(task) {
     : excerpt;
 }
 
+function bindRunModelRequests(detail, runId) {
+  const section = detail.querySelector(".run-model-requests");
+  const status = section.querySelector(".run-model-requests-status");
+  const table = section.querySelector("table");
+  let loading = false;
+  let loaded = false;
+
+  section.addEventListener("toggle", async () => {
+    if (!section.open || loading || loaded) return;
+    loading = true;
+    status.textContent = "Caricamento degli invii…";
+
+    try {
+      const response = await fetch("/api/runs/" + runId + "/model-requests");
+      if (!response.ok) throw new Error("Request log unavailable");
+      const requests = await response.json();
+      const body = table.querySelector("tbody");
+
+      requests.forEach(request => {
+        const row = body.insertRow();
+        row.insertCell().textContent = new Date(request.started_at).toLocaleString("it-IT");
+        row.insertCell().textContent = request.tokens_in?.toLocaleString("it-IT") ?? "—";
+        row.insertCell().textContent = request.tokens_out?.toLocaleString("it-IT") ?? "—";
+      });
+
+      table.hidden = requests.length === 0;
+      status.textContent = requests.length === 0
+        ? "Nessun invio registrato per questa run."
+        : "— indica un dato non disponibile.";
+      loaded = true;
+    } catch (error) {
+      status.textContent = "Impossibile leggere il registro. Chiudi e riapri la sezione per riprovare.";
+    } finally {
+      loading = false;
+    }
+  });
+}
+
 function renderRunDetail(run) {
   const detail = document.getElementById("run-detail");
   if (!detail) return;
@@ -1033,6 +1071,17 @@ function renderRunDetail(run) {
       '<div><span class="run-detail-label">Tokens</span><strong>' + totalTokens.toLocaleString() + '</strong></div>' +
       '<div><span class="run-detail-label">Cost</span><strong>$' + Number(run.cost_usd || 0).toFixed(4) + '</strong></div>' +
     '</div>' +
+    '<details class="run-technical-context run-model-requests">' +
+      '<summary>Richieste al modello</summary>' +
+      '<div class="run-model-requests-content">' +
+        '<table hidden aria-label="Richieste al modello"><thead><tr>' +
+          '<th scope="col">Ora di invio</th>' +
+          '<th scope="col">Token in entrata</th>' +
+          '<th scope="col">Token in uscita</th>' +
+        '</tr></thead><tbody></tbody></table>' +
+        '<p class="incident-meta run-model-requests-status" role="status"></p>' +
+      '</div>' +
+    '</details>' +
     '<div class="run-detail-block">' +
       '<span class="run-detail-label">Task</span>' +
       '<div class="run-detail-text run-task-summary"></div>' +
@@ -1065,6 +1114,7 @@ function renderRunDetail(run) {
       : '');
 
   detail.querySelector(".run-task-summary").textContent = taskSummary || "—";
+  bindRunModelRequests(detail, run.id);
   const retrySource = detail.querySelector(".run-retry-source");
   if (retrySource) {
     retrySource.append("Nuovo tentativo della ", createRunLink(run.retry_of_run_id, "run #" + run.retry_of_run_id));

@@ -1,6 +1,20 @@
 from database import get_connection
 
 
+def list_model_requests(run_id):
+    connection = get_connection()
+    try:
+        rows = connection.execute("""
+            SELECT started_at, tokens_in, tokens_out
+            FROM model_requests
+            WHERE run_id = ?
+            ORDER BY id
+        """, (run_id,)).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        connection.close()
+
+
 def record_model_request(run_id, model, request_bytes):
     connection = get_connection()
     try:

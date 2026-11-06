@@ -189,6 +189,9 @@ body{background:#0c0c0d}
 .run-technical-context[open] summary{border-bottom:1px solid #29292c}
 .run-technical-context pre{margin:0;padding:12px;max-height:280px;overflow:auto;white-space:pre-wrap;font-size:11px;line-height:1.45;color:#999}
 .run-technical-context .run-detail-text{border:0;border-radius:0;background:transparent}
+.run-model-requests-content{padding:8px 12px;overflow-x:auto}
+.run-model-requests table{width:100%;border-collapse:collapse;font-size:12px}
+.run-model-requests th,.run-model-requests td{padding:7px;text-align:left;border-bottom:1px solid #29292c}
 
 
 /* Incident Timeline */
