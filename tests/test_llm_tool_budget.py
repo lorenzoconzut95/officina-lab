@@ -30,7 +30,7 @@ class LlmToolBudgetTests(unittest.TestCase):
         create_response.side_effect = [
             SimpleNamespace(output=[ResponseFunctionToolCall(
                 type="function_call", name="list_recent_errors", call_id="call_1", arguments="{}"
-            )], usage=None),
+            )], usage=SimpleNamespace(input_tokens=120, output_tokens=8)),
             SimpleNamespace(output=[], usage=None, output_text="Final diagnosis"),
         ]
 
@@ -45,7 +45,7 @@ class LlmToolBudgetTests(unittest.TestCase):
                 ).lastrowid
             run_id = create_run(agent_id, "Investigate")["id"]
             context = {"text": "", "run_id": run_id}
-            run_llm(AGENT, "Investigate", context)
+            result = run_llm(AGENT, "Investigate", context)
             with self.assertRaises(ModelRequestTooLargeError):
                 run_llm(AGENT, "x" * MAX_REQUEST_BYTES, context)
 
@@ -57,6 +57,9 @@ class LlmToolBudgetTests(unittest.TestCase):
         self.assertEqual([row["run_id"] for row in records], [run_id, run_id])
         self.assertTrue(all(row["started_at"].endswith("Z") for row in records))
         self.assertGreater(records[1]["request_bytes"], records[0]["request_bytes"])
+        self.assertEqual((records[0]["tokens_in"], records[0]["tokens_out"]), (120, 8))
+        self.assertEqual((records[1]["tokens_in"], records[1]["tokens_out"]), (None, None))
+        self.assertEqual((result["tokens_in"], result["tokens_out"]), (120, 8))
 
     @patch("services.llm_provider.OpenAI")
     def test_oversized_initial_request_is_blocked_before_sending(self, client):

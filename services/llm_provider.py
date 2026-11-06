@@ -3,7 +3,7 @@ import os
 
 from openai import OpenAI
 
-from repositories.model_requests import record_model_request
+from repositories.model_requests import record_model_request, record_model_request_usage
 from services.tools import (
     TOOL_DEFINITIONS,
     execute_tool_json
@@ -218,9 +218,14 @@ def create_bounded_response(client, *, run_id=None, **request):
             f"The request is {request_bytes:,} bytes. The limit is "
             f"{MAX_REQUEST_BYTES:,} bytes. Reduce the task or context and create a new run."
         )
+    request_id = None
     if run_id is not None:
-        record_model_request(run_id, request["model"], request_bytes)
-    return client.responses.create(**request)
+        request_id = record_model_request(run_id, request["model"], request_bytes)
+
+    response = client.responses.create(**request)
+    if request_id is not None and response.usage is not None:
+        record_model_request_usage(request_id, *usage_numbers(response))
+    return response
 
 
 def run_llm(agent, task, context_package):

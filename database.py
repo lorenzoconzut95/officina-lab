@@ -213,6 +213,8 @@ def init_db():
             started_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
         )
     """)
+    ensure_column(cursor, "model_requests", "tokens_in", "INTEGER")
+    ensure_column(cursor, "model_requests", "tokens_out", "INTEGER")
 
     connection.commit()
     connection.close()
