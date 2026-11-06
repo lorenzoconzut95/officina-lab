@@ -2,7 +2,18 @@ import os
 import unittest
 from unittest.mock import patch
 
-from services.executor import execute_run
+from services.executor import execute_run, humanize_llm_error
+
+
+class ExecutorErrorMessageTests(unittest.TestCase):
+    def test_context_window_error_takes_precedence_over_generic_400(self):
+        error = RuntimeError("Error code: 400 - {'code': 'context_length_exceeded'}")
+
+        self.assertEqual(
+            humanize_llm_error(error),
+            "OpenAI rejected the request because it exceeds the model's context window. "
+            "Reduce the task or context and create a new run."
+        )
 
 
 @patch("services.executor.claim_run_execution", return_value=True)

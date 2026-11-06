@@ -74,6 +74,12 @@ def humanize_llm_error(error):
     text = str(error)
     lower = text.lower()
 
+    if "context_length_exceeded" in lower:
+        return (
+            "OpenAI rejected the request because it exceeds the model's context window. "
+            "Reduce the task or context and create a new run."
+        )
+
     if "400" in lower or "bad request" in lower:
         return (
             "OpenAI request rejected (400). "
