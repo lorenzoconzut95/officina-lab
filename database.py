@@ -136,6 +136,18 @@ def init_db():
     ensure_column(cursor, "incidents", "approval_id", "INTEGER")
     ensure_column(cursor, "incidents", "verification_run_id", "INTEGER")
 
+    # Keep the existing incident ID and links when adopting the stable key.
+    cursor.execute("""
+        UPDATE incidents
+        SET incident_key = 'model_request_too_large'
+        WHERE id = (
+            SELECT MIN(id) FROM incidents
+            WHERE incident_key LIKE 'model request is %'
+        ) AND NOT EXISTS (
+            SELECT 1 FROM incidents WHERE incident_key = 'model_request_too_large'
+        )
+    """)
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

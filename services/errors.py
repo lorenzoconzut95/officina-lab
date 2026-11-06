@@ -26,6 +26,10 @@ def list_errors(limit=50):
 def _incident_key(error_message):
     text = (error_message or "").strip().lower()
 
+    if text.startswith(("model request blocked locally before sending to openai.",
+                        "model request is ")):
+        return "model_request_too_large"
+
     if "invalid_api_key" in text or "api key" in text:
         return "openai_api_key"
 

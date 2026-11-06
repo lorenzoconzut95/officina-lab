@@ -1,10 +1,41 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+import database
+from repositories.errors import create_error
+from repositories.incidents import create_incident
 from services.incidents import sync_incidents
 
 
 class IncidentLifecycleTests(unittest.TestCase):
+    def test_local_request_blocks_share_the_existing_incident(self):
+        with TemporaryDirectory() as directory, patch.object(
+            database, "DB_NAME", str(Path(directory) / "test.db")
+        ):
+            database.init_db()
+            legacy = "Model request is 540,386 bytes. The limit is 524,288 bytes."
+            create_error(72, "Bug Hunter", "Test", legacy)
+            existing = create_incident(legacy.lower(), "low", 1, 72, "Bug Hunter", "Test", legacy)
+
+            database.init_db()
+            for run_id, size in [(73, 600_000), (74, 700_000)]:
+                message = (
+                    "Model request blocked locally before sending to OpenAI. "
+                    f"The request is {size:,} bytes. The limit is 524,288 bytes."
+                )
+                create_error(run_id, "Bug Hunter", "Test", message)
+
+            incidents = sync_incidents()
+
+        self.assertEqual(len(incidents), 1)
+        incident = incidents[0]
+        self.assertEqual(incident["id"], existing["id"])
+        self.assertEqual(incident["incident_key"], "model_request_too_large")
+        self.assertEqual(incident["occurrences"], 3)
+        self.assertEqual(incident["latest_run_id"], 74)
+
     @patch("services.incidents.repo_list_incidents")
     @patch("services.incidents.refresh_incident")
     @patch("services.incidents.repo_update_incident_status")

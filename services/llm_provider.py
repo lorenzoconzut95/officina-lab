@@ -213,7 +213,8 @@ def create_bounded_response(client, **request):
     request_bytes = len(payload.encode("utf-8"))
     if request_bytes > MAX_REQUEST_BYTES:
         raise ModelRequestTooLargeError(
-            f"Model request is {request_bytes:,} bytes. The limit is "
+            "Model request blocked locally before sending to OpenAI. "
+            f"The request is {request_bytes:,} bytes. The limit is "
             f"{MAX_REQUEST_BYTES:,} bytes. Reduce the task or context and create a new run."
         )
     return client.responses.create(**request)

@@ -21,7 +21,10 @@ AGENT = {"name": "Bug Hunter", "role": "debug"}
 class LlmToolBudgetTests(unittest.TestCase):
     @patch("services.llm_provider.OpenAI")
     def test_oversized_initial_request_is_blocked_before_sending(self, client):
-        with self.assertRaisesRegex(ModelRequestTooLargeError, "524,288 bytes"):
+        with self.assertRaisesRegex(
+            ModelRequestTooLargeError,
+            r"blocked locally before sending to OpenAI.*524,288 bytes"
+        ):
             run_llm(AGENT, "🌊" * (MAX_REQUEST_BYTES // 4), {"text": ""})
 
         client.return_value.responses.create.assert_not_called()
