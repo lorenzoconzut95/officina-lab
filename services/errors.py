@@ -30,6 +30,11 @@ def _incident_key(error_message):
                         "model request is ")):
         return "model_request_too_large"
 
+    if "context_length_exceeded" in text or text.startswith(
+        "openai rejected the request because it exceeds the model's context window."
+    ):
+        return "context_length_exceeded"
+
     if "invalid_api_key" in text or "api key" in text:
         return "openai_api_key"
 

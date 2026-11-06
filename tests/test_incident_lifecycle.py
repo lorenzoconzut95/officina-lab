@@ -10,6 +10,34 @@ from services.incidents import sync_incidents
 
 
 class IncidentLifecycleTests(unittest.TestCase):
+    def test_context_window_errors_share_the_existing_incident(self):
+        with TemporaryDirectory() as directory, patch.object(
+            database, "DB_NAME", str(Path(directory) / "test.db")
+        ):
+            database.init_db()
+            legacy = (
+                "LLM execution failed: Error code: 400 - {'error': {'message': "
+                "'Your input exceeds the context window of this model.', "
+                "'code': 'context_length_exceeded'}}"
+            )
+            create_error(56, "Bug Hunter", "Test", legacy)
+            existing = create_incident(
+                legacy.lower()[:120], "low", 1, 56, "Bug Hunter", "Test", legacy
+            )
+            database.init_db()
+            create_error(73, "Bug Hunter", "Test", (
+                "OpenAI rejected the request because it exceeds the model's context window. "
+                "Reduce the task or context and create a new run."
+            ))
+
+            incidents = sync_incidents()
+
+        self.assertEqual(len(incidents), 1)
+        incident = incidents[0]
+        self.assertEqual(incident["id"], existing["id"])
+        self.assertEqual(incident["incident_key"], "context_length_exceeded")
+        self.assertEqual(incident["occurrences"], 2)
+
     def test_local_request_blocks_share_the_existing_incident(self):
         with TemporaryDirectory() as directory, patch.object(
             database, "DB_NAME", str(Path(directory) / "test.db")

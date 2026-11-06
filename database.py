@@ -149,6 +149,18 @@ def init_db():
     """)
 
     cursor.execute("""
+        UPDATE incidents
+        SET incident_key = 'context_length_exceeded'
+        WHERE id = (
+            SELECT MIN(id) FROM incidents
+            WHERE incident_key LIKE 'llm execution failed:%your input exceeds the context window%'
+               OR incident_key LIKE 'openai rejected the request because it exceeds the model''s context window.%'
+        ) AND NOT EXISTS (
+            SELECT 1 FROM incidents WHERE incident_key = 'context_length_exceeded'
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,
