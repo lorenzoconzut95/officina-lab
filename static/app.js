@@ -507,7 +507,8 @@ function renderIncidents(items) {
     top.innerHTML =
       '<div>' +
       '<div class="incident-title">' + item.incident_key + '</div>' +
-      '<div class="incident-meta">Run #' + item.latest_run_id +
+      '<div class="incident-meta">Incident #' + item.id +
+      ' · Run #' + item.latest_run_id +
       ' · ' + item.latest_agent_name +
       ' · ' + item.occurrences + ' occurrence' +
       (item.occurrences === 1 ? '' : 's') +
