@@ -161,6 +161,18 @@ def init_db():
     """)
 
     cursor.execute("""
+        UPDATE incidents
+        SET incident_key = 'openai_token_rate_limit'
+        WHERE id = (
+            SELECT MIN(id) FROM incidents
+            WHERE lower(latest_error_message) LIKE 'openai token rate limit reached (429).%'
+               OR lower(latest_error_message) LIKE '%rate limit%tokens per min%'
+        ) AND NOT EXISTS (
+            SELECT 1 FROM incidents WHERE incident_key = 'openai_token_rate_limit'
+        )
+    """)
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_id INTEGER NOT NULL,

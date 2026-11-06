@@ -35,6 +35,11 @@ def _incident_key(error_message):
     ):
         return "context_length_exceeded"
 
+    if text.startswith("openai token rate limit reached (429).") or (
+        "rate limit" in text and "tokens per min" in text
+    ):
+        return "openai_token_rate_limit"
+
     if "invalid_api_key" in text or "api key" in text:
         return "openai_api_key"
 

@@ -10,6 +10,32 @@ from services.incidents import sync_incidents
 
 
 class IncidentLifecycleTests(unittest.TestCase):
+    def test_token_rate_limit_errors_share_the_existing_incident(self):
+        with TemporaryDirectory() as directory, patch.object(
+            database, "DB_NAME", str(Path(directory) / "test.db")
+        ):
+            database.init_db()
+            legacy = (
+                "LLM execution failed: Error code: 429 - Rate limit reached for a model "
+                "in an organization with a long identifier on tokens per min (TPM)."
+            )
+            create_error(56, "Bug Hunter", "Test", legacy)
+            existing = create_incident(
+                legacy.lower()[:120], "low", 1, 56, "Bug Hunter", "Test", legacy
+            )
+
+            database.init_db()
+            create_error(73, "Bug Hunter", "Test", "OpenAI token rate limit reached (429).")
+            create_error(74, "Bug Hunter", "Test", "Rate limit reached on requests per min (RPM).")
+
+            incidents = sync_incidents()
+
+        self.assertEqual(len(incidents), 2)
+        incident = next(item for item in incidents if item["id"] == existing["id"])
+        self.assertEqual(incident["incident_key"], "openai_token_rate_limit")
+        self.assertEqual(incident["occurrences"], 2)
+        self.assertEqual(incident["latest_run_id"], 73)
+
     def test_context_window_errors_share_the_existing_incident(self):
         with TemporaryDirectory() as directory, patch.object(
             database, "DB_NAME", str(Path(directory) / "test.db")
