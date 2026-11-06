@@ -89,6 +89,32 @@ def create_run(agent_id, task):
     return get_run(run_id)
 
 
+def prepare_retry(source_run):
+    connection = get_connection()
+    try:
+        with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT id FROM runs WHERE retry_of_run_id = ?", (source_run["id"],)
+            ).fetchone()
+            if existing:
+                retry_id = existing["id"]
+            else:
+                retry_id = connection.execute("""
+                    INSERT INTO runs (agent_id, task, status, retry_of_run_id)
+                    VALUES (?, ?, 'running', ?)
+                """, (source_run["agent_id"], source_run["task"], source_run["id"])).lastrowid
+                connection.execute("UPDATE agents SET status = 'working' WHERE id = ?", (source_run["agent_id"],))
+                connection.execute("""
+                    UPDATE incidents
+                    SET analysis_run_id = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE analysis_run_id = ? AND status = 'investigating'
+                """, (retry_id, source_run["id"]))
+        return get_run(retry_id)
+    finally:
+        connection.close()
+
+
 def claim_run_execution(run_id):
     connection = get_connection()
     try:

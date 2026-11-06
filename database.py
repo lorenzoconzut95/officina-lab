@@ -198,6 +198,11 @@ def init_db():
     ensure_column(cursor, "runs", "context_snapshot", "TEXT")
     ensure_column(cursor, "runs", "execution_started_at", "TEXT")
     ensure_column(cursor, "runs", "execution_claimed_at", "TEXT")
+    ensure_column(cursor, "runs", "retry_of_run_id", "INTEGER")
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS runs_retry_of_run_id
+        ON runs (retry_of_run_id)
+    """)
 
     connection.commit()
     connection.close()

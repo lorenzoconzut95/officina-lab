@@ -5,7 +5,9 @@ from services.runs import (
     list_runs,
     create_run,
     finish_run,
-    create_builder_handoff
+    create_builder_handoff,
+    prepare_retry,
+    RunRetryNotAllowed
 )
 
 from services.executor import RunAlreadyExecuted, execute_run
@@ -28,6 +30,20 @@ def create_new_run(run: RunCreate):
         run.agent_id,
         run.task
     )
+
+
+@router.post("/{run_id}/retry", status_code=201)
+def prepare_run_retry(run_id: int):
+    try:
+        retry = prepare_retry(run_id)
+    except RunRetryNotAllowed as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Only failed rate-limited runs can prepare a retry."
+        ) from error
+    if retry is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return retry
 
 
 @router.patch("/{run_id}/finish")

@@ -4,7 +4,8 @@ from repositories.runs import (
     list_runs as repo_list_runs,
     create_run as repo_create_run,
     get_run as repo_get_run,
-    finish_run as repo_finish_run
+    finish_run as repo_finish_run,
+    prepare_retry as repo_prepare_retry
 )
 
 from services.agents import update_agent_status, list_agents
@@ -13,7 +14,38 @@ from services.project_state import build_project_state
 
 
 def list_runs():
-    return repo_list_runs()
+    return [dict(run, can_prepare_retry=can_prepare_retry(run)) for run in repo_list_runs()]
+
+
+def can_prepare_retry(run):
+    if run["status"] != "failed":
+        return False
+
+    output = (run["output"] or "").lower()
+    if "insufficient_quota" in output or "no credits remaining" in output:
+        return False
+
+    return output.startswith((
+        "openai token rate limit reached (429).",
+        "openai request rate limit reached (429).",
+        "openai rate limit reached (429)."
+    )) or (
+        output.startswith("llm execution failed: error code: 429")
+        and "rate limit reached" in output
+    )
+
+
+class RunRetryNotAllowed(Exception):
+    pass
+
+
+def prepare_retry(run_id):
+    run = repo_get_run(run_id)
+    if run is None:
+        return None
+    if not can_prepare_retry(run):
+        raise RunRetryNotAllowed(run_id)
+    return repo_prepare_retry(run)
 
 
 def create_run(agent_id, task):

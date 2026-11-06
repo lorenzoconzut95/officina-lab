@@ -962,6 +962,10 @@ function renderRunDetail(run) {
       '<button onclick="finishRun(' + run.id + ',\'failed\')">Fail</button>';
   }
 
+  if (run.can_prepare_retry) {
+    actions += '<button onclick="prepareRunRetry(' + run.id + ', this)">Prepare retry</button>';
+  }
+
   if (
     run.status === "completed" &&
     run.output &&
@@ -1024,7 +1028,10 @@ function renderRunDetail(run) {
           '<div class="run-detail-text">' + context + '</div>' +
         '</details>'
       : '') +
-    '<div class="run-detail-actions">' + actions + '</div>';
+    '<div class="run-detail-actions">' + actions + '</div>' +
+    (run.can_prepare_retry
+      ? '<p class="incident-meta">Prepara una nuova run con lo stesso agente e lo stesso task. Premi Execute nella nuova run quando vuoi avviarla.</p>'
+      : '');
 
   detail.querySelector(".run-task-summary").textContent = taskSummary || "—";
   const fullTask = detail.querySelector(".run-full-task");
@@ -1375,6 +1382,23 @@ async function rejectRequest(id) {
   if (!r.ok) return alert("Errore nel rifiuto");
 
   await loadApprovals();
+}
+
+async function prepareRunRetry(runId, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/runs/" + runId + "/retry", {method: "POST"});
+    const run = await response.json();
+    if (!response.ok) return alert(run.detail || "Impossibile preparare il nuovo tentativo.");
+
+    await Promise.all([loadRuns(), loadAgents()]);
+    openRunWorkspace(run.id);
+    await loadIncidents();
+  } catch (error) {
+    alert("Impossibile aprire il nuovo tentativo: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function startRun() {
