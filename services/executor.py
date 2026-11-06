@@ -94,6 +94,18 @@ def humanize_llm_error(error):
         )
 
     if "429" in lower or "rate limit" in lower:
+        if "tokens per min" in lower:
+            return (
+                "OpenAI token rate limit reached (429). "
+                "Wait before retrying or reduce the amount of text sent to the model."
+            )
+
+        if "requests per min" in lower:
+            return (
+                "OpenAI request rate limit reached (429). "
+                "Wait before retrying or send requests less frequently."
+            )
+
         return (
             "OpenAI rate limit reached (429). "
             "Retry later or reduce request frequency."

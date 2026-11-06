@@ -6,6 +6,26 @@ from services.executor import execute_run, humanize_llm_error
 
 
 class ExecutorErrorMessageTests(unittest.TestCase):
+    def test_rate_limit_message_matches_the_limit_type(self):
+        cases = {
+            "tokens per min (TPM)": (
+                "OpenAI token rate limit reached (429). "
+                "Wait before retrying or reduce the amount of text sent to the model."
+            ),
+            "requests per minute (RPM)": (
+                "OpenAI request rate limit reached (429). "
+                "Wait before retrying or send requests less frequently."
+            ),
+            "unspecified": (
+                "OpenAI rate limit reached (429). "
+                "Retry later or reduce request frequency."
+            ),
+        }
+        for detail, expected in cases.items():
+            with self.subTest(detail=detail):
+                error = RuntimeError("Error code: 429 - Rate limit reached: " + detail)
+                self.assertEqual(humanize_llm_error(error), expected)
+
     def test_context_window_error_takes_precedence_over_generic_400(self):
         error = RuntimeError("Error code: 400 - {'code': 'context_length_exceeded'}")
 
