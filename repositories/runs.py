@@ -4,6 +4,7 @@ from database import get_connection
 def row_to_dict(row):
     return {
         "id": row["id"],
+        "retry_of_run_id": row["retry_of_run_id"],
         "agent_id": row["agent_id"],
         "agent_name": row["agent_name"],
         "task": row["task"],
@@ -26,6 +27,7 @@ def run_select():
     return """
         SELECT
             runs.id,
+            runs.retry_of_run_id,
             runs.agent_id,
             agents.name AS agent_name,
             runs.task,

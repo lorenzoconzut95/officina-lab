@@ -44,6 +44,7 @@ class RunRetryTests(unittest.TestCase):
 
             self.assertEqual(first["id"], second["id"])
             self.assertNotEqual(first["id"], source["id"])
+            self.assertEqual(first["retry_of_run_id"], source["id"])
             self.assertEqual(first["agent_id"], agent_id)
             self.assertEqual(first["task"], source["task"])
             self.assertEqual(first["status"], "running")

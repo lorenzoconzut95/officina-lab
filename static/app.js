@@ -597,21 +597,12 @@ function renderIncidents(items) {
     actions.appendChild(analyzeButton);
 
     if (analysisRun) {
-      const openAnalysisLink = document.createElement("a");
+      const openAnalysisLink = createRunLink(analysisRun.id, "Open analysis run #" + analysisRun.id);
       openAnalysisLink.className = "incident-analysis-link";
-      openAnalysisLink.href = "#run-" + analysisRun.id;
-      openAnalysisLink.textContent = "Open analysis run #" + analysisRun.id;
       const arrow = document.createElement("span");
       arrow.textContent = "→";
       arrow.setAttribute("aria-hidden", "true");
       openAnalysisLink.appendChild(arrow);
-      openAnalysisLink.addEventListener("click", event => {
-        if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey &&
-            window.location.hash === openAnalysisLink.hash) {
-          event.preventDefault();
-          openRunWorkspace(analysisRun.id);
-        }
-      });
       actions.appendChild(openAnalysisLink);
     }
 
@@ -864,6 +855,20 @@ function selectRun(runId) {
   renderRuns(allRuns);
 }
 
+function createRunLink(runId, label) {
+  const link = document.createElement("a");
+  link.href = "#run-" + runId;
+  link.textContent = label;
+  link.addEventListener("click", event => {
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey &&
+        window.location.hash === link.hash) {
+      event.preventDefault();
+      openRunWorkspace(runId);
+    }
+  });
+  return link;
+}
+
 function openRunWorkspace(runId) {
   if (!allRuns.some(run => run.id === runId)) {
     return alert("Run #" + runId + " is not available in Run Workspace.");
@@ -993,6 +998,7 @@ function renderRunDetail(run) {
       '<div>' +
         '<span class="eyebrow">Run #' + run.id + '</span>' +
         '<h3>' + run.agent_name + '</h3>' +
+        (run.retry_of_run_id != null ? '<p class="incident-meta run-retry-source"></p>' : '') +
       '</div>' +
       '<span class="run-status ' + run.status + '">' + run.status + '</span>' +
     '</div>' +
@@ -1034,6 +1040,10 @@ function renderRunDetail(run) {
       : '');
 
   detail.querySelector(".run-task-summary").textContent = taskSummary || "—";
+  const retrySource = detail.querySelector(".run-retry-source");
+  if (retrySource) {
+    retrySource.append("Nuovo tentativo della ", createRunLink(run.retry_of_run_id, "run #" + run.retry_of_run_id));
+  }
   const fullTask = detail.querySelector(".run-full-task");
   if (fullTask) fullTask.textContent = run.task;
 }
