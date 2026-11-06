@@ -1,4 +1,5 @@
 import json
+import re
 
 from repositories.agents import get_agent
 from repositories.runs import (
@@ -95,21 +96,28 @@ def humanize_llm_error(error):
 
     if "429" in lower or "rate limit" in lower:
         if "tokens per min" in lower:
-            return (
+            message = (
                 "OpenAI token rate limit reached (429). "
                 "Wait before retrying or reduce the amount of text sent to the model."
             )
 
-        if "requests per min" in lower:
-            return (
+        elif "requests per min" in lower:
+            message = (
                 "OpenAI request rate limit reached (429). "
                 "Wait before retrying or send requests less frequently."
             )
 
-        return (
-            "OpenAI rate limit reached (429). "
-            "Retry later or reduce request frequency."
-        )
+        else:
+            message = (
+                "OpenAI rate limit reached (429). "
+                "Retry later or reduce request frequency."
+            )
+
+        wait = re.search(r"\b(?:try again|retry) in (\d+(?:\.\d+)?)\s*(ms|s)\b", lower)
+        if wait:
+            amount, unit = wait.groups()
+            message += f" OpenAI suggests waiting {amount} {unit} before retrying."
+        return message
 
     if "timeout" in lower:
         return (

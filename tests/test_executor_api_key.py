@@ -6,6 +6,18 @@ from services.executor import execute_run, humanize_llm_error
 
 
 class ExecutorErrorMessageTests(unittest.TestCase):
+    def test_rate_limit_message_shows_the_wait_suggested_by_openai(self):
+        for detail, expected_wait in [("3.013s", "3.013 s"), ("799ms", "799 ms")]:
+            with self.subTest(detail=detail):
+                error = RuntimeError(
+                    "Error code: 429 - Rate limit reached on tokens per min. "
+                    f"Please try again in {detail}."
+                )
+                self.assertIn(
+                    f"OpenAI suggests waiting {expected_wait} before retrying.",
+                    humanize_llm_error(error)
+                )
+
     def test_rate_limit_message_matches_the_limit_type(self):
         cases = {
             "tokens per min (TPM)": (
