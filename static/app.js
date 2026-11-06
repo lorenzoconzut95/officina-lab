@@ -1602,11 +1602,17 @@ async function viewIncidentReport(incidentId, card) {
     text += "Resolved: " + report.resolved_at + "\n";
   }
 
+  const latestTask = report.latest_error.task || "";
+  const taskPreview = latestTask.slice(0, 4000);
+  const taskPreviewNote = latestTask.length > taskPreview.length
+    ? "\n[Task shortened. See Run Workspace for the full task.]"
+    : "";
+
   text +=
     "\nLATEST ERROR\n" +
     "Run: #" + report.latest_error.run_id + "\n" +
     "Agent: " + report.latest_error.agent_name + "\n" +
-    "Task: " + report.latest_error.task + "\n" +
+    "Task: " + taskPreview + taskPreviewNote + "\n" +
     "Message:\n" + report.latest_error.message + "\n";
 
   const structured = report.structured_analysis || {};
