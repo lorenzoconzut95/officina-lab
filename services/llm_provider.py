@@ -17,6 +17,7 @@ DEFAULT_MODEL = os.getenv(
 MAX_TOOL_OUTPUT_BYTES = 128 * 1024
 TOTAL_TOOL_OUTPUT_BYTES = 256 * 1024
 MIN_TOOL_OUTPUT_BYTES = 1024
+MAX_REQUEST_BYTES = 512 * 1024
 
 INPUT_COST_PER_M = float(
     os.getenv(
@@ -198,6 +199,26 @@ class EmptyModelResponseError(RuntimeError):
     pass
 
 
+class ModelRequestTooLargeError(RuntimeError):
+    pass
+
+
+def create_bounded_response(client, **request):
+    payload = json.dumps(
+        request,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        default=lambda item: item.to_dict(mode="json")
+    )
+    request_bytes = len(payload.encode("utf-8"))
+    if request_bytes > MAX_REQUEST_BYTES:
+        raise ModelRequestTooLargeError(
+            f"Model request is {request_bytes:,} bytes. The limit is "
+            f"{MAX_REQUEST_BYTES:,} bytes. Reduce the task or context and create a new run."
+        )
+    return client.responses.create(**request)
+
+
 def run_llm(agent, task, context_package):
     client = OpenAI()
 
@@ -228,7 +249,8 @@ def run_llm(agent, task, context_package):
         }
     ]
 
-    response = client.responses.create(
+    response = create_bounded_response(
+        client,
         model=DEFAULT_MODEL,
         instructions=instructions,
         input=input_items,
@@ -289,7 +311,8 @@ def run_llm(agent, task, context_package):
             or remaining_tool_bytes < MIN_TOOL_OUTPUT_BYTES
             or round_index == max_tool_rounds - 1
         )
-        response = client.responses.create(
+        response = create_bounded_response(
+            client,
             model=DEFAULT_MODEL,
             instructions=(
                 instructions + "\nTool budget exhausted. Give the final answer using the evidence collected so far."

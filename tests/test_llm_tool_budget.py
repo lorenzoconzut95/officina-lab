@@ -3,9 +3,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from openai.types.responses import ResponseFunctionToolCall
+
 from services.llm_provider import (
     EmptyModelResponseError,
+    MAX_REQUEST_BYTES,
     MAX_TOOL_OUTPUT_BYTES,
+    ModelRequestTooLargeError,
     TOTAL_TOOL_OUTPUT_BYTES,
     run_llm,
     serialize_tool_output,
@@ -15,6 +19,28 @@ AGENT = {"name": "Bug Hunter", "role": "debug"}
 
 
 class LlmToolBudgetTests(unittest.TestCase):
+    @patch("services.llm_provider.OpenAI")
+    def test_oversized_initial_request_is_blocked_before_sending(self, client):
+        with self.assertRaisesRegex(ModelRequestTooLargeError, "524,288 bytes"):
+            run_llm(AGENT, "🌊" * (MAX_REQUEST_BYTES // 4), {"text": ""})
+
+        client.return_value.responses.create.assert_not_called()
+
+    @patch("services.llm_provider.execute_tool_json")
+    @patch("services.llm_provider.OpenAI")
+    def test_oversized_followup_is_blocked_after_tool_execution(self, client, execute_tool):
+        create_response = client.return_value.responses.create
+        create_response.return_value = SimpleNamespace(output=[ResponseFunctionToolCall(
+            type="function_call", name="list_recent_errors", call_id="call_1", arguments="{}"
+        )], usage=None)
+        execute_tool.return_value = {"text": "x" * (100 * 1024)}
+
+        with self.assertRaisesRegex(ModelRequestTooLargeError, "524,288 bytes"):
+            run_llm(AGENT, "x" * (430 * 1024), {"text": ""})
+
+        execute_tool.assert_called_once()
+        create_response.assert_called_once()
+
     def test_small_tool_output_is_preserved(self):
         result = {"items": ["diagnosi già disponibile"]}
         self.assertEqual(json.loads(serialize_tool_output(result)), result)
@@ -26,7 +52,7 @@ class LlmToolBudgetTests(unittest.TestCase):
         create_response = client.return_value.responses.create
         create_response.side_effect = [
             SimpleNamespace(output=[
-                SimpleNamespace(
+                ResponseFunctionToolCall(
                     type="function_call", name="list_recent_errors",
                     call_id=f"call_{round_index}_{index}", arguments="{}"
                 )
@@ -54,7 +80,7 @@ class LlmToolBudgetTests(unittest.TestCase):
         execute_tool.return_value = result
         create_response = client.return_value.responses.create
         create_response.side_effect = [
-            SimpleNamespace(output=[SimpleNamespace(
+            SimpleNamespace(output=[ResponseFunctionToolCall(
                 type="function_call", name="list_recent_errors",
                 call_id="call_1", arguments="{}"
             )], usage=None),
@@ -78,7 +104,7 @@ class LlmToolBudgetTests(unittest.TestCase):
         create_response = client.return_value.responses.create
         tool_responses = [
             SimpleNamespace(
-                output=[SimpleNamespace(
+                output=[ResponseFunctionToolCall(
                     type="function_call", name="list_recent_errors",
                     call_id=f"call_{index}", arguments="{}"
                 )],

@@ -12,6 +12,7 @@ from services.context import build_run_context
 from services.llm_provider import (
     DEFAULT_MODEL,
     EmptyModelResponseError,
+    ModelRequestTooLargeError,
     is_configured,
     get_api_key_status,
     run_llm
@@ -64,6 +65,9 @@ def build_local_output(agent, task):
 
 
 def humanize_llm_error(error):
+    if isinstance(error, ModelRequestTooLargeError):
+        return str(error)
+
     if isinstance(error, EmptyModelResponseError):
         return "The model returned no final answer. Create a new run to retry."
 
