@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from models import RunCreate, RunFinish
-from repositories.model_requests import list_model_requests
+from repositories.model_requests import list_model_requests, list_recent_model_requests
 from services.runs import (
     list_runs,
     create_run,
@@ -28,6 +28,11 @@ def read_runs():
 @router.get("/{run_id}/model-requests")
 def read_run_model_requests(run_id: int):
     return list_model_requests(run_id)
+
+
+@router.get("/model-requests")
+def read_recent_model_requests():
+    return list_recent_model_requests()
 
 
 @router.post("", status_code=201)

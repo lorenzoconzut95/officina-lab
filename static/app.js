@@ -970,13 +970,59 @@ function summarizeRunTask(task) {
     : excerpt;
 }
 
+function modelRequestOutcomeLabel(request) {
+  const labels = {pending: "In attesa", response: "Risposta ricevuta", error: "Errore"};
+  const label = labels[request.outcome] || "Sconosciuto";
+  return request.http_status ? label + " " + request.http_status : label;
+}
+
+async function loadModelAudit() {
+  const refresh = document.getElementById("refresh-model-audit");
+  if (refresh.disabled) return;
+
+  const table = document.getElementById("model-audit-table");
+  const status = document.getElementById("model-audit-status");
+  refresh.disabled = true;
+  status.textContent = "Caricamento degli invii…";
+
+  try {
+    const response = await fetch("/api/runs/model-requests");
+    if (!response.ok) throw new Error("Request log unavailable");
+    const requests = await response.json();
+    const body = table.querySelector("tbody");
+    body.replaceChildren();
+
+    requests.forEach(request => {
+      const row = body.insertRow();
+      row.insertCell().textContent = new Date(request.started_at).toLocaleString("it-IT");
+      row.insertCell().appendChild(createRunLink(request.run_id, "#" + request.run_id));
+      row.insertCell().textContent = request.model;
+      row.insertCell().textContent = request.tokens_in?.toLocaleString("it-IT") ?? "—";
+      row.insertCell().textContent = request.tokens_out?.toLocaleString("it-IT") ?? "—";
+      const outcome = document.createElement("span");
+      outcome.className = "model-audit-outcome";
+      outcome.dataset.outcome = request.outcome || "unknown";
+      outcome.textContent = modelRequestOutcomeLabel(request);
+      row.insertCell().appendChild(outcome);
+    });
+
+    table.hidden = requests.length === 0;
+    status.textContent = requests.length === 0
+      ? "Nessun invio registrato. Le prossime richieste al modello compariranno qui."
+      : requests.length + " invii mostrati. — indica un dato non disponibile.";
+  } catch (error) {
+    status.textContent = "Impossibile aggiornare il registro. Premi Aggiorna per riprovare.";
+  } finally {
+    refresh.disabled = false;
+  }
+}
+
 function bindRunModelRequests(detail, runId) {
   const section = detail.querySelector(".run-model-requests");
   const status = section.querySelector(".run-model-requests-status");
   const table = section.querySelector("table");
   let loading = false;
   let loaded = false;
-  const outcomeLabels = {pending: "In attesa", response: "Risposta ricevuta", error: "Errore"};
 
   section.addEventListener("toggle", async () => {
     if (!section.open || loading || loaded) return;
@@ -994,8 +1040,7 @@ function bindRunModelRequests(detail, runId) {
         row.insertCell().textContent = new Date(request.started_at).toLocaleString("it-IT");
         row.insertCell().textContent = request.tokens_in?.toLocaleString("it-IT") ?? "—";
         row.insertCell().textContent = request.tokens_out?.toLocaleString("it-IT") ?? "—";
-        const outcome = outcomeLabels[request.outcome] || "Sconosciuto";
-        row.insertCell().textContent = request.http_status ? outcome + " " + request.http_status : outcome;
+        row.insertCell().textContent = modelRequestOutcomeLabel(request);
       });
 
       table.hidden = requests.length === 0;
@@ -2067,6 +2112,7 @@ document.querySelectorAll("[data-view-target]").forEach(button => {
   button.addEventListener("click", () => {
     const viewName = button.getAttribute("data-view-target");
     switchDashboardView(viewName);
+    if (viewName === "audit") loadModelAudit();
     if (viewName === "incidents") {
       loadRuns().then(() => renderIncidents(allIncidents)).catch(error => {
         console.error("Could not refresh incident run states", error);
@@ -2086,6 +2132,7 @@ document.getElementById("create-task-button").onclick = createTask;
 document.getElementById("create-agent-button").onclick = createAgent;
 document.getElementById("create-memory-button").onclick = createMemory;
 document.getElementById("start-run-button").onclick = startRun;
+document.getElementById("refresh-model-audit").onclick = loadModelAudit;
 document.getElementById("filter-status").onchange = applyFilters;
 document.getElementById("filter-priority").onchange = applyFilters;
 document.getElementById("filter-project").oninput = applyFilters;

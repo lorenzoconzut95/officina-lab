@@ -192,6 +192,21 @@ body{background:#0c0c0d}
 .run-model-requests-content{padding:8px 12px;overflow-x:auto}
 .run-model-requests table{width:100%;border-collapse:collapse;font-size:12px}
 .run-model-requests th,.run-model-requests td{padding:7px;text-align:left;border-bottom:1px solid #29292c}
+.model-audit-panel{margin-bottom:18px;padding:18px;background:#141416;border:1px solid #323238;border-radius:12px}
+.model-audit-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.model-audit-heading h3{margin:0;color:#f2f2f4;font-size:18px}
+.model-audit-heading p{margin:6px 0 0;color:#b1b1b8;font-size:13px;line-height:1.45}
+.model-audit-heading button{padding:8px 12px;border:1px solid #535b6a;border-radius:8px;background:#222936;color:#e1edff;cursor:pointer}
+.model-audit-heading button:disabled{opacity:.65;cursor:wait}
+.model-audit-table-wrap{overflow-x:auto}
+.model-audit-panel table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:13px;font-variant-numeric:tabular-nums}
+.model-audit-panel th,.model-audit-panel td{padding:10px 12px;text-align:left;border-bottom:1px solid #303038}
+.model-audit-panel th{background:#1e1e24;color:#d1d1d8;font-size:12px}
+.model-audit-panel a{color:#91baff;text-underline-offset:3px;font-weight:600}
+.model-audit-outcome{display:inline-block;padding:3px 7px;border-radius:6px;background:#2a2a30;color:#d2d2db;font-size:12px}
+.model-audit-outcome[data-outcome="response"]{background:#193629;color:#b6edc7}
+.model-audit-outcome[data-outcome="error"]{background:#47262e;color:#ffc3ca}
+.model-audit-outcome[data-outcome="pending"]{background:#40331c;color:#f8dfa5}
 
 
 /* Incident Timeline */

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officina Lab</title>
-    <link rel="stylesheet" href="/static/style.css?v=32">
+    <link rel="stylesheet" href="/static/style.css?v=33">
 </head>
 <body>
     <header class="app-shell-header">
@@ -242,11 +242,35 @@
                 <div>
                     <span class="eyebrow">Observability</span>
                     <h2>Audit & Activity</h2>
-                    <p>Technical traces stay here, away from daily operations.</p>
+                    <p>Segui gli invii al modello e consulta i registri tecnici quando ti servono.</p>
                 </div>
             </div>
 
-            <details class="collapsible-panel" open>
+            <section class="model-audit-panel" aria-labelledby="model-audit-title">
+                <div class="model-audit-heading">
+                    <div>
+                        <h3 id="model-audit-title">Richieste al modello</h3>
+                        <p>Ultimi 30 invii, dal più recente. Apri una run per vedere il compito e il risultato.</p>
+                    </div>
+                    <button type="button" id="refresh-model-audit">Aggiorna</button>
+                </div>
+                <div class="model-audit-table-wrap" tabindex="0" role="region" aria-label="Tabella degli invii">
+                    <table id="model-audit-table" hidden>
+                        <thead><tr>
+                            <th scope="col">Ora locale</th>
+                            <th scope="col">Run</th>
+                            <th scope="col">Modello</th>
+                            <th scope="col">Token in entrata</th>
+                            <th scope="col">Token in uscita</th>
+                            <th scope="col">Esito</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <p id="model-audit-status" class="incident-meta" role="status"></p>
+            </section>
+
+            <details class="collapsible-panel">
                 <summary>Tool Audit <span id="tool-call-count" class="muted">0 calls</span></summary>
                 <div id="tool-calls"></div>
             </details>
@@ -258,6 +282,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=64"></script>
+    <script src="/static/app.js?v=65"></script>
 </body>
 </html>

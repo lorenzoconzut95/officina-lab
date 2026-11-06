@@ -15,6 +15,20 @@ def list_model_requests(run_id):
         connection.close()
 
 
+def list_recent_model_requests():
+    connection = get_connection()
+    try:
+        rows = connection.execute("""
+            SELECT run_id, started_at, model, tokens_in, tokens_out, outcome, http_status
+            FROM model_requests
+            ORDER BY started_at DESC, id DESC
+            LIMIT 30
+        """).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        connection.close()
+
+
 def record_model_request(run_id, model, request_bytes):
     connection = get_connection()
     try:
