@@ -227,3 +227,16 @@ error
 - Test run #72 confirmed that the local server blocked a 540,386-byte request before sending it to OpenAI. The request limit is 524,288 bytes (512 KiB). Automated tests cover both the initial request and follow-up requests after tool use. All 26 tests passed.
 - Builder proposal #71 was left pending. Review found no current path that bypasses the tool-output limits.
 - Incident #14 was resolved manually based on the evidence above. No formal verification run was linked.
+
+
+## Checkpoint 2026-11-09 — Portfolio and first commercial pilot specification
+
+- Expanded README with source links, local startup instructions and explicit verification limits.
+- Added a portfolio index and publication workflow for future Officina products.
+- Added the quote follow-up pilot proposal and essential specification under docs/pilots/preventivi-followup/.
+- Proposed first target: window and door installers around Torino, restricted to follow-up on quotes already sent.
+- Pilot status: designed, not implemented or commercially validated. No interested customer or willingness to pay is confirmed.
+- The 690 EUR pilot price and 249 EUR continuation price are hypotheses for validation.
+- Existing tasks, approvals and SQLite are reusable; quote data, due dates, message approval, manual-send confirmation, reporting and authenticated client access still require development.
+- No application code was changed and no tests were run for this documentation update. No commercial messages were sent.
+- Next product milestone: one synthetic quote completes the proposed workflow with truthful event reporting before using real customer data.
